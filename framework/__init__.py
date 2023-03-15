@@ -1,58 +1,26 @@
 from tkinter import *
-from tkinter import ttk
-
-# global master
-root = Tk()
-
-class MainWindow:
-    def __init__(self, master, **kwargs):
-        title = kwargs.pop('title')
-        command = kwargs.pop('command')
-        self.button = Button(master, text=title, command=command)
-        self.button.config(state=DISABLED)
-        self.button.pack()
-
-class PairButton:
-    def __init__(self, master, **kwargs):
-        title = kwargs.pop('text', '')
-        self.button = Button(master, text=title, command=self.on_click)
-        self.button.pack()
-        self.pairButton = None
-
-    def on_click(self):
-        self.config(state=DISABLED)
-        self.pairButton.config(state=NORMAL)
-
-    def set_pair(self, button: Button):
-        self.pairButton = button
-
-    def config(self, **kwargs):
-        self.button.config(**kwargs)
-
-
-def start_process():
-    print("Start...")
-
-
-def stop_process():
-    print("Stop...")
-
-
-
-def on_exit():
-    print("closing")
-    root.destroy()
+from tkinter import ttk, scrolledtext
+from .button import PairButton
+from .window import MainWindow
 
 
 def run():
-    root.protocol("WM_DELETE_WINDOW", on_exit)
+    app = MainWindow('同传鸡')
+    app.geometry('480x270')
 
-    start_button = PairButton(root, text='Start')
-    start_button.config(state=NORMAL)
-    stop_button = PairButton(root, text='Stop')
-    stop_button.config(state=DISABLED)
+    frame = Frame(app)
+    frame.grid(column=0, columnspan=320, row=0, rowspan=180)
 
+    # Button
+    start_button = PairButton(frame, 'Start', app.start_process, 0, 100)
+    stop_button = PairButton(frame, 'Stop', app.stop_process, 0, 150)
     start_button.set_pair(stop_button)
     stop_button.set_pair(start_button)
+    start_button.set_active()
+    stop_button.set_inactive()
 
-    root.mainloop()
+    # ScrolledText
+    txt = scrolledtext.ScrolledText(frame, width=40, height=10, state=DISABLED)
+    txt.grid(column=0, row=0)
+
+    window.mainloop()

@@ -1,6 +1,6 @@
 from . import baidu_api
 from multiprocessing import Queue
-from loguru import logger
+#from loguru import logger
 
 Translator = {
     'Baidu': baidu_api.Translator
@@ -25,7 +25,7 @@ def get_all(queue: Queue) -> list[str]:
 
 def run(translator_name: str, src_queue: Queue, send_queue: Queue):
     if translator_name not in Translator:
-        logger.error(f"Translator not exists: {translator_name}")
+        #logger.error(f"Translator not exists: {translator_name}")
         exit(0)
 
     translator = Translator[translator_name]('jp', 'zh')
