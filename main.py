@@ -1,5 +1,6 @@
 import translate
 import bilibili
+import framework
 
 from multiprocessing import Process, Queue
 from configparser import ConfigParser
@@ -8,7 +9,7 @@ from threading import Thread
 CONFIG = ConfigParser()
 CONFIG.read('config/config.ini')
 
-if __name__ == '__main__':
+def main():
     src_text_queue = Queue(maxsize=0)
     send_queue = Queue(maxsize=0)
 
@@ -45,3 +46,7 @@ if __name__ == '__main__':
     p_sender.join()
 
     exit(0)
+
+
+if __name__ == '__main__':
+    framework.run()
