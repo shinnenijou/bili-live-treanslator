@@ -2,7 +2,7 @@ import translator
 import bilibili
 import framework
 
-from multiprocessing import Process, Queue
+from multiprocessing import Process, Queue as p_Queue
 from configparser import ConfigParser
 from threading import Thread
 
@@ -10,8 +10,8 @@ CONFIG = ConfigParser()
 CONFIG.read('config/config.ini')
 
 def main():
-    src_text_queue = Queue(maxsize=0)
-    send_queue = Queue(maxsize=0)
+    src_text_queue = p_Queue(maxsize=0)
+    send_queue = p_Queue(maxsize=0)
 
     p_translator = Thread(
         target=translator.run,
@@ -49,4 +49,5 @@ def main():
 
 
 if __name__ == '__main__':
-    framework.run()
+    gui_text_queue = p_Queue(maxsize=0)
+    framework.run(gui_text_queue)
