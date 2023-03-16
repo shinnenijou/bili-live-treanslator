@@ -2,29 +2,26 @@ from tkinter import *
 from tkinter import ttk
 
 
-class PairButton:
-    def __init__(self, master, text, command, column, row):
-        self.button = Button(master, text=text, command=self.on_click)
+class StartButton(Button):
+    def __init__(self, master, reverse, **kwargs):
+        super().__init__(master, **kwargs)
+        self.__command = kwargs.pop('command', lambda: None)
+        self.config(command=self.__on_click)
+        self.__reverse = reverse
 
-        self.command = command
-        self.pairButton = None
+        self.__update_state()
 
-        self.button.grid(column=column, row=row)
+    def __on_click(self):
+        self.__command()
+        self.__update_state()
 
-    def on_click(self):
-        self.command()
+    def __update_state(self):
+        flag = getattr(self.master, 'get_flag', lambda: False)()
 
-        self.set_inactive()
-        self.pairButton.set_active()
+        if self.__reverse:
+            flag = not flag
 
-    def set_pair(self, button: Button):
-        self.pairButton = button
-
-    def set_active(self):
-        self.__config(state=NORMAL)
-
-    def set_inactive(self):
-        self.__config(state=DISABLED)
-
-    def __config(self, **kwargs):
-        self.button.config(**kwargs)
+        if flag:
+            self.config(state=NORMAL)
+        else:
+            self.config(state=DISABLED)

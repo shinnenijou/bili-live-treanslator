@@ -1,13 +1,14 @@
 from configparser import RawConfigParser
 from . import danmaku_sender
-from multiprocessing import Queue
+from multiprocessing import Queue as p_Queue
 from time import sleep
 
 CONFIG = RawConfigParser()
 CONFIG.read('config/bilibili_config.ini')
 CONFIG = CONFIG['bilibili']
 
-def run(send_queue: Queue):
+
+def run(send_queue: p_Queue):
     sender = danmaku_sender.DanmakuSender(CONFIG['TARGET_ROOM'], sessdata=CONFIG['SESSDATA'], bili_jct=CONFIG['BILI_JCT'], buvid3=CONFIG['BUVID3'])
 
     while True:

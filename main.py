@@ -1,4 +1,4 @@
-import translate
+import translator
 import bilibili
 import framework
 
@@ -14,7 +14,7 @@ def main():
     send_queue = Queue(maxsize=0)
 
     p_translator = Thread(
-        target=translate.run,
+        target=translator.run,
         name='translator',
         args=(
             CONFIG['GLOBAL']['TRANSLATOR'],
@@ -36,7 +36,7 @@ def main():
     p_sender.start()
 
     while True:
-        text = input("Text to translate: ")
+        text = input("Text to translator: ")
         src_text_queue.put(text, block=True)
 
         if text == 'exit':

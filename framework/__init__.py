@@ -1,26 +1,32 @@
 from tkinter import *
-from tkinter import ttk, scrolledtext
-from .button import PairButton
-from .window import MainWindow
+from tkinter import ttk
+from .wingui import WinGUI
+from .setting import SettingFrame
+from .translate import TranslateFrame, StartButton
 
 
 def run():
-    app = MainWindow('同传鸡')
-    app.geometry('480x270')
+    win = WinGUI()
 
-    frame = Frame(app)
-    frame.grid(column=0, columnspan=320, row=0, rowspan=180)
+    # Setting Frame
+    setting_frame = SettingFrame(win)
 
-    # Button
-    start_button = PairButton(frame, 'Start', app.start_process, 0, 100)
-    stop_button = PairButton(frame, 'Stop', app.stop_process, 0, 150)
-    start_button.set_pair(stop_button)
-    stop_button.set_pair(start_button)
-    start_button.set_active()
-    stop_button.set_inactive()
+    # Translate Frame
+    translate_frame = TranslateFrame(win)
 
-    # ScrolledText
-    txt = scrolledtext.ScrolledText(frame, width=40, height=10, state=DISABLED)
-    txt.grid(column=0, row=0)
+    # Tab Manager
+    tab_manager = ttk.Notebook(win)
+    tab_manager.add(translate_frame, text='翻译')
+    tab_manager.add(setting_frame, text='设置')
 
-    window.mainloop()
+    tab_manager.pack(fill=BOTH, expand=True)
+
+    # button
+    button_commands = [translate_frame.start, translate_frame.stop]
+    button_texts = ['Start', 'Stop']
+    start_button = StartButton(translate_frame, button_texts, button_commands)
+    start_button.grid(column=0, row=0)
+
+    # NoteBook
+
+    win.mainloop()
