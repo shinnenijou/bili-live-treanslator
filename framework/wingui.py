@@ -1,4 +1,5 @@
 from tkinter import *
+from config import Const
 
 
 class WinGUI(Tk):
@@ -6,8 +7,8 @@ class WinGUI(Tk):
         super().__init__(**kwargs)
 
         # global config
-        self.title('同传鸡')
-        self.geometry('480x270')
+        self.title(Const.AppTitle)
+        self.geometry(Const.AppSize)
         self.resizable(width=False, height=False)
 
         # runtime flag
@@ -18,10 +19,10 @@ class WinGUI(Tk):
         self.protocol("WM_DELETE_WINDOW", self.on_exit)
 
         # register update to mainloop
-        self.after(100, self.__update)
+        self.after(Const.UpdateInterval, self.__update)
 
     def on_exit(self):
         self.destroy()
 
     def __update(self):
-        self.after(100, self.__update)
+        self.after(Const.UpdateInterval, self.__update)

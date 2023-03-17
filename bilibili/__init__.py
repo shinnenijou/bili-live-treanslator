@@ -1,22 +1,33 @@
 from configparser import RawConfigParser
-from . import danmaku_sender
 from multiprocessing import Queue as p_Queue
-from time import sleep
 
+from config import CONFIG_ROOT, EConfigType, ConfigFile
+from .danmaku_sender import DanmakuSender
+
+# Config
 CONFIG = RawConfigParser()
-CONFIG.read('config/bilibili_config.ini')
-CONFIG = CONFIG['bilibili']
+CONFIG.read(CONFIG_ROOT + ConfigFile[EConfigType.Bilibili])
+
+# Danmaku Sender
+SENDER = DanmakuSender(
+        room_id=CONFIG['room']['TARGET_ROOM'],
+        sessdata=CONFIG['user']['SESSDATA'],
+        bili_jct=CONFIG['user']['BILI_JCT'],
+        buvid3=CONFIG['user']['BUVID3']
+    )
+
+# Danmaku Anti Shield
+ANTI_SHIELD = None
 
 
-def run(send_queue: p_Queue):
-    sender = danmaku_sender.DanmakuSender(CONFIG['TARGET_ROOM'], sessdata=CONFIG['SESSDATA'], bili_jct=CONFIG['BILI_JCT'], buvid3=CONFIG['BUVID3'])
+def update_config():
+    global CONFIG
 
-    while True:
-        text = send_queue.get(block=True)
-        if text == 'exit':
-            break
+    CONFIG.read(CONFIG_ROOT + ConfigFile[EConfigType.Bilibili])
+    SENDER.update_config(
+        room_id=CONFIG['room']['TARGET_ROOM'],
+        sessdata=CONFIG['user']['SESSDATA'],
+        bili_jct=CONFIG['user']['BILI_JCT'],
+        buvid3=CONFIG['user']['BUVID3']
+    )
 
-        resp = sender.send(text)
-        print(resp)
-
-    exit(0)

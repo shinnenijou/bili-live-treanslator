@@ -21,6 +21,14 @@ def remove(path: str):
     except Exception as e:
         print(e)
 
+def touch(file: str):
+    try:
+        open(file, 'x')
+    except FileExistsError:
+        pass
+    except Exception as e:
+        print(e)
+
 
 def get_all(queue: [p_Queue, t_Queue]) -> list[str]:
     """
