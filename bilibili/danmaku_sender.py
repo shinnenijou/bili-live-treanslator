@@ -1,8 +1,12 @@
 import requests
+from requests import exceptions, utils as req_utils
 import json
-from time import time as now_time
+from time import time
+
+import utils
 from .bilibili_enum import *
 from queue import Queue as t_Queue
+import threading
 
 
 class DanmakuSender:
@@ -14,7 +18,9 @@ class DanmakuSender:
             cls.__instance = super().__new__(cls)
         return cls.__instance
 
-    def __init__(self, room_id: str, sessdata, bili_jct, buvid3, queue: t_Queue, timeout=(3.05,5)):
+    def __init__(self, room_id: str,  send_queue: t_Queue, show_queue: t_Queue,
+                 sessdata: str, bili_jct: str, buvid3: str, timeout=(3.05, 5)):
+
         # requests config
         self.__session = requests.session()
         self.__url = "https://api.live.bilibili.com/msg/send"
@@ -27,9 +33,10 @@ class DanmakuSender:
 
         # account config
         self.__room_id = room_id
-        cookie = f'buvid3={buvid3};SESSDATA={sessdata};bili_jct={bili_jct}'
-        requests.utils.add_dict_to_cookiejar(self.__session.cookies, {"Cookie": cookie})
         self.__csrf = bili_jct
+        cookie = f'buvid3={buvid3};SESSDATA={sessdata};bili_jct={bili_jct}'
+        req_utils.add_dict_to_cookiejar(self.__session.cookies, {"Cookie": cookie})
+
 
         # danmaku config
         self.__mode = EDanmakuPosition.Roll
@@ -38,7 +45,8 @@ class DanmakuSender:
 
         # Control
         self.__is_running = False
-        self.__send_queue = queue
+        self.__send_queue = send_queue
+        self.__show_queue = show_queue
 
     def __post(self, url: str, data: dict) -> tuple[ESendResult, requests.Response|None]:
         """
@@ -55,9 +63,9 @@ class DanmakuSender:
                 result = ESendResult.Success
             else:
                 resp = None
-        except requests.exceptions.ConnectionError:
+        except exceptions.ConnectionError:
             pass
-        except requests.exceptions.Timeout:
+        except exceptions.Timeout:
             pass
 
         return result, resp
@@ -77,9 +85,9 @@ class DanmakuSender:
                 result = ESendResult.Success
             else:
                 resp = None
-        except requests.exceptions.ConnectionError:
+        except exceptions.ConnectionError:
             pass
-        except requests.exceptions.Timeout:
+        except exceptions.Timeout:
             pass
 
         return result, resp
@@ -92,7 +100,7 @@ class DanmakuSender:
             "bubble": 0,
             "msg": msg,
             "roomid": self.__room_id,
-            "rnd": now_time(),
+            "rnd": int(time()),
             "csrf_token": self.__csrf,
             "csrf": self.__csrf,
         }
@@ -103,32 +111,31 @@ class DanmakuSender:
 
         return result, resp
 
-    def send(self, msg: str, mode=1):
+    def send(self, msg: str):
         """
         向直播间发送弹幕
-        :param msg:待发送
-        :param mode:
-        :param number:
-        :param timeout:
-        :return:
+        :param msg: 待发送的弹幕内容
+        :return: 服务器返回的响应体
         """
         result, resp = self.__send(msg)
+        if result == ESendResult.Success:
+            self.__show_queue.put(utils.hms_time() + '|' + msg)
+        elif result == ESendResult.DuplicateMsg:
+            self.__show_queue.put(utils.hms_time() + '|发送失败：重复弹幕')
+        else:
+            self.__show_queue.put(utils.hms_time() + '|发送失败：未知错误, 错误代码：' + str(result))
 
-
-
-        return resp
 
     def get_danmaku_config(self):
         """获取用户在直播间内的当前弹幕颜色、弹幕位置、发言字数限制等信息"""
         url = "https://api.live.bilibili.com/xlive/web-room/v1/index/getInfoByUser"
         params = {"room_id": self.__room_id}
         result, resp = self.__get(url=url, params=params)
-        if result != ESendResult.Success:
-            resp = json.loads(resp.text)
-            if resp['code'] != ESendResult.RoomNotExist:
-                danmaku_config = resp["data"]["property"]["danmu"]
-                self.__mode = danmaku_config["mode"]
-                self.__color = danmaku_config["color"]
+        resp = json.loads(resp.text)
+        if result == ESendResult.Success and resp['code'] == ESendResult.Success:
+            danmaku_config = resp["data"]["property"]["danmu"]
+            self.__mode = danmaku_config["mode"]
+            self.__color = danmaku_config["color"]
 
         return self.__mode, self.__color
 
@@ -144,7 +151,8 @@ class DanmakuSender:
             "csrf": self.__csrf,
         }
         result, resp = self.__post(url=url, data=data)
-        if result == ESendResult.Success:
+        resp = json.loads(resp.text)
+        if result == ESendResult.Success and resp['code'] == ESendResult.Success:
             self.__mode = mode
             self.__color = color
 
@@ -152,19 +160,19 @@ class DanmakuSender:
 
     def get_user_info(self):
         """获取用户信息"""
-        url = "https://api.live.bilibili.com/xlive/web-ucenter/user/get_user_info"
-        params = {"room_id": self.__room_id}
-        result, resp = self.__get(url=url, params=params)
-        if result == ESendResult.Success:
-            resp = json.loads(resp.text)
+        url = "https://api.bilibili.com/x/space/myinfo"
+        result, resp = self.__get(url=url)
+        resp = json.loads(resp.text)
+        if result == ESendResult.Success and resp['code'] == ESendResult.Success:
+            self.__name = resp['data']['name']
 
-        return resp["data"]
+        return self.__name
 
-    def update_config(self, room_id: str, sessdata, bili_jct, buvid3):
+    def update_config(self, room_id: str, sessdata: str, bili_jct: str, buvid3: str):
         self.__room_id = room_id
-        cookie = f'buvid3={buvid3};SESSDATA={sessdata};bili_jct={bili_jct}'
-        requests.utils.add_dict_to_cookiejar(self.__session.cookies, {"Cookie": cookie})
         self.__csrf = bili_jct
+        cookie = f'buvid3={buvid3};SESSDATA={sessdata};bili_jct={bili_jct}'
+        req_utils.add_dict_to_cookiejar(self.__session.cookies, {"Cookie": cookie})
 
     def run(self):
         self.__is_running = True
@@ -176,3 +184,4 @@ class DanmakuSender:
     def stop(self):
         self.__is_running = False
         self.__send_queue.put('')
+

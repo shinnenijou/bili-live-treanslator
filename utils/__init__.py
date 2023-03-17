@@ -1,7 +1,8 @@
 import os
 import shutil
 from multiprocessing import Queue as p_Queue
-from queue import Queue as t_Queue, Empty
+from queue import Queue as t_Queue
+from time import strftime, localtime
 
 
 def mkdir(path: str):
@@ -20,6 +21,7 @@ def remove(path: str):
         pass
     except Exception as e:
         print(e)
+
 
 def touch(file: str):
     try:
@@ -44,3 +46,11 @@ def get_all(queue: [p_Queue, t_Queue]) -> list[str]:
         ret.append(element)
 
     return ret
+
+
+def hms_time() -> str:
+    """
+    获取当前hh:mm:ss时间
+    :return:当前hh:mm:ss时间字符串
+    """
+    return strftime('%H:%M:%S', localtime())
