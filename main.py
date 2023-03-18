@@ -61,7 +61,7 @@ def init_processes():
     # Init logger
     utils.init(gui_text_queue)
 
-    if os.getenv('DEBUG') is not None and os.name == "posix":
+    if os.getenv('GUIONLY') is not None:
         return True
 
     # Init ASR process(init in child process)
