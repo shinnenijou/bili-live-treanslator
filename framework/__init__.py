@@ -1,14 +1,27 @@
 from tkinter import *
 from tkinter import ttk
+from multiprocessing import Queue as p_Queue
+from configparser import RawConfigParser
+
 from .wingui import WinGUI
 from .setting import SettingFrame
 from .translate import TranslateFrame, StartButton, TextFrame
-from multiprocessing import Queue as p_Queue
-from config import EConfigType
+
+import bilibili
+import translator
+from config import CONFIG_ROOT, ConfigFile, EConfigType
 
 
-def run(text_queue: p_Queue):
-    win = WinGUI()
+CONFIG = RawConfigParser()
+CONFIG.read(CONFIG_ROOT + ConfigFile[EConfigType.Global])
+
+
+def init():
+    pass
+
+
+def run(gui_text_queue, start_process, stop_process):
+    win = WinGUI(stop_process)
 
     # Style
     #top_style = ttk.Style()
@@ -29,16 +42,16 @@ def run(text_queue: p_Queue):
     top_tab_manager.add(setting_tab, text='设置')
 
     # Translate Frame Widgets
-    button_commands = [translate_tab.start, translate_tab.stop]
+    button_commands = [start_process, stop_process]
     button_texts = ['Start', 'Stop']
     start_button = StartButton(translate_tab, button_texts, button_commands)
-    text_frame = TextFrame(translate_tab, text_queue, height=10)
+    text_frame = TextFrame(gui_text_queue, translate_tab, height=10)
 
     # Setting Frame Widgets
     setting_tab_manager = ttk.Notebook(setting_tab, style='my.TNotebook')
-    global_setting_tab = SettingFrame(EConfigType.Global, setting_tab)
-    translate_setting_tab = SettingFrame(EConfigType.Translate, setting_tab)
-    bilibili_setting_tab = SettingFrame(EConfigType.Bilibili, setting_tab)
+    global_setting_tab = SettingFrame(CONFIG, setting_tab)
+    translate_setting_tab = SettingFrame(translator.CONFIG, setting_tab)
+    bilibili_setting_tab = SettingFrame(bilibili.CONFIG, setting_tab)
     setting_tab_manager.add(global_setting_tab, text='全局')
     setting_tab_manager.add(translate_setting_tab, text='翻译')
     setting_tab_manager.add(bilibili_setting_tab, text='bili')

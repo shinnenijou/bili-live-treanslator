@@ -6,7 +6,7 @@ class ESendResult:
     """
     发送结果枚举,
     """
-    SendFail = -1
+    Error = -1
     Success = 0
     HighFrequency = 10030         # 弹幕发送频率过高
     DuplicateMsg = 10031          # 短期内发送了两条内容完全相同的弹幕

@@ -1,12 +1,11 @@
 import requests
 from requests import exceptions, utils as req_utils
 import json
-from time import time
+from time import time, sleep
+from multiprocessing import Queue as p_Queue
 
 import utils
-from .bilibili_enum import *
-from queue import Queue as t_Queue
-import threading
+from .enums import *
 
 
 class DanmakuSender:
@@ -18,8 +17,8 @@ class DanmakuSender:
             cls.__instance = super().__new__(cls)
         return cls.__instance
 
-    def __init__(self, room_id: str,  send_queue: t_Queue, show_queue: t_Queue,
-                 sessdata: str, bili_jct: str, buvid3: str, timeout=(3.05, 5)):
+    def __init__(self, room_id: str,  send_queue: p_Queue, show_queue: p_Queue,
+                 sessdata: str, bili_jct: str, buvid3: str, send_interval: float ,timeout=(3.05, 5)):
 
         # requests config
         self.__session = requests.session()
@@ -42,6 +41,7 @@ class DanmakuSender:
         self.__mode = EDanmakuPosition.Roll
         self.__color = EDanmakuColor.White
         self.__name = ''
+        self.__send_interval = send_interval
 
         # Control
         self.__is_running = False
@@ -55,7 +55,7 @@ class DanmakuSender:
         :param data: post数据
         :return: 返回结果枚举与响应体
         """
-        result = ESendResult.SendFail
+        result = ESendResult.Error
         resp = None
         try:
             resp = self.__session.post(url=url, headers=self.__headers, data=data, timeout=self.__timeout)
@@ -77,7 +77,7 @@ class DanmakuSender:
         :param params: 请求参数
         :return: 返回结果枚举与响应体
         """
-        result = ESendResult.SendFail
+        result = ESendResult.Error
         resp = None
         try:
             resp = self.__session.get(url=url, headers=self.__headers, params=params, timeout=self.__timeout)
@@ -105,7 +105,7 @@ class DanmakuSender:
             "csrf": self.__csrf,
         }
         result, resp = self.__post(self.__url, data)
-        if result != ESendResult.SendFail:
+        if result == ESendResult.Success:
             resp = json.loads(resp.text)
             result = resp['code']
 
@@ -119,12 +119,17 @@ class DanmakuSender:
         """
         result, resp = self.__send(msg)
         if result == ESendResult.Success:
-            self.__show_queue.put(utils.hms_time() + '|' + msg)
+            self.__show_queue.put(msg)
         elif result == ESendResult.DuplicateMsg:
-            self.__show_queue.put(utils.hms_time() + '|发送失败：重复弹幕')
+            utils.logger.error("发送失败：重复弹幕")
         else:
-            self.__show_queue.put(utils.hms_time() + '|发送失败：未知错误, 错误代码：' + str(result))
+            utils.logger.error(f"发送失败：未知错误, 错误代码： {result}")
 
+    def is_running(self):
+        return self.__is_running
+
+    def get_name(self):
+        return self.__name
 
     def get_danmaku_config(self):
         """获取用户在直播间内的当前弹幕颜色、弹幕位置、发言字数限制等信息"""
@@ -168,18 +173,20 @@ class DanmakuSender:
 
         return self.__name
 
-    def update_config(self, room_id: str, sessdata: str, bili_jct: str, buvid3: str):
+    def update_config(self, room_id: str, sessdata: str, bili_jct: str, buvid3: str, send_interval: float):
         self.__room_id = room_id
         self.__csrf = bili_jct
         cookie = f'buvid3={buvid3};SESSDATA={sessdata};bili_jct={bili_jct}'
         req_utils.add_dict_to_cookiejar(self.__session.cookies, {"Cookie": cookie})
+        self.__send_interval = send_interval
 
-    def run(self):
+    def start(self):
         self.__is_running = True
         while self.__is_running:
             text = self.__send_queue.get(block=True)
-            if text == '':
+            if text != '':
                 self.send(text)
+                sleep(self.__send_interval)
 
     def stop(self):
         self.__is_running = False

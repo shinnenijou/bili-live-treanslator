@@ -1,30 +1,56 @@
-from . import baidu_api
-from multiprocessing import Queue
+from multiprocessing import Queue as p_Queue
+from configparser import RawConfigParser, SectionProxy
+
 import utils
+from config import CONFIG_ROOT, ConfigFile, EConfigType
+from . import baidu
 
-Translator = {
-    'Baidu': baidu_api.Translator
-}
-
-
-def run(translator_name: str, src_queue: Queue, send_queue: Queue):
-    if translator_name not in Translator:
-        #logger.error(f"Translator not exists: {translator_name}")
-        exit(0)
-
-    translator = Translator[translator_name]('jp', 'zh')
-    while True:
-        src_text = utils.get_all(src_queue)
-        if src_text[0] == 'exit':
-            send_queue.put(src_text[0], block=True)
-            break
-
-        dst_text = translator.translate(*src_text)
-        for text in dst_text:
-            send_queue.put(text, block=True)
-
-    exit(0)
+translator = None
 
 
-if __name__ == '__main__':
-    print("hello, I'm translator")
+CONFIG = RawConfigParser()
+CONFIG.read(CONFIG_ROOT + ConfigFile[EConfigType.Translate])
+
+
+def init(name: str, src_queue: p_Queue, send_queue: p_Queue):
+    global translator
+
+    translator_map = {
+        'Baidu': baidu.Translator
+    }
+
+    if name not in translator_map:
+        utils.logger.error(f"未知的翻译器: {name}, 请检查全局配置")
+        return False
+
+    if not CONFIG.has_section(name):
+        utils.logger.error("缺少翻译器配置, 请检查翻译器设置")
+        return False
+
+    translator = translator_map[name](
+        _src_queue=src_queue,
+        _send_queue= send_queue,
+        _name=name,
+        _config=CONFIG[name]
+    )
+
+    if not translator.validate_config():
+        utils.logger.error("[error]翻译器配置错误, 请检查翻译器设置")
+        return False
+
+    return True
+
+
+def destroy():
+    global translator
+    translator = None
+
+
+def update_config():
+    global CONFIG, translator
+    CONFIG.read(CONFIG_ROOT + ConfigFile[EConfigType.Translate])
+
+    if translator is None:
+        return
+
+    translator.update_config(CONFIG[translator.get_name()])

@@ -1,8 +1,36 @@
 import os
 import shutil
 from multiprocessing import Queue as p_Queue
-from queue import Queue as t_Queue
 from time import strftime, localtime
+
+
+logger = None
+
+
+class Logger():
+    __instance = None
+
+    def __new__(cls, *args, **kwargs):
+        if cls.__instance is None:
+            cls.__instance = super().__new__(cls)
+        return cls.__instance
+
+    def __init__(self, gui_text_queue: p_Queue):
+        self.__gui_text_queue = gui_text_queue
+
+    def info(self, text: str):
+        self.__gui_text_queue.put(f'[info]{text}')
+
+    def warn(self, text: str):
+        self.__gui_text_queue.put(f'[warn]{text}')
+
+    def error(self, text: str):
+        self.__gui_text_queue.put(f'[error]{text}')
+
+
+def init(gui_text_queue: p_Queue):
+    global logger
+    logger = Logger(gui_text_queue)
 
 
 def mkdir(path: str):
@@ -32,7 +60,7 @@ def touch(file: str):
         print(e)
 
 
-def get_all(queue: [p_Queue, t_Queue]) -> list[str]:
+def get_all(queue: p_Queue) -> list[str]:
     """
     弹出当前同步队列里的所有元素, 队列里没有元素时将会被阻塞, 一旦有元素后将全部取走
     :param queue:待弹出元素的队列
