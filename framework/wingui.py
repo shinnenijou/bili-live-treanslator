@@ -3,7 +3,7 @@ from config import Const
 
 
 class WinGUI(Tk):
-    def __init__(self, stop_process, **kwargs):
+    def __init__(self, destroy_processes, **kwargs):
         super().__init__(**kwargs)
 
         # global config
@@ -16,7 +16,7 @@ class WinGUI(Tk):
         self.__children = []
 
         # override sys callback
-        self.__command = stop_process
+        self.__command = destroy_processes
         self.protocol("WM_DELETE_WINDOW", self.on_exit)
 
         # register update to mainloop

@@ -18,7 +18,7 @@ class DanmakuSender:
         return cls.__instance
 
     def __init__(self, room_id: str,  send_queue: p_Queue, show_queue: p_Queue,
-                 sessdata: str, bili_jct: str, buvid3: str, send_interval: float ,timeout=(3.05, 5)):
+                 sessdata: str, bili_jct: str, buvid3: str, send_interval: float, timeout=(3.05, 5)):
 
         # requests config
         self.__session = requests.session()

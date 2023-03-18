@@ -80,10 +80,11 @@ class Translator:
 
         while self.__is_running:
             src_text = utils.get_all(self.__src_queue)
-            if src_text == '':
-                continue
 
-            dst_text = self.translate(*src_text)
+            while src_text.count('') > 0:
+                src_text.remove('')
+
+            _, dst_text = self.translate(*src_text)
             for text in dst_text:
                 self.__send_queue.put(text)
 

@@ -20,8 +20,8 @@ def init():
     pass
 
 
-def run(gui_text_queue, start_process, stop_process):
-    win = WinGUI(stop_process)
+def run(gui_text_queue, start_threads, stop_threads, destroy_processes):
+    win = WinGUI(destroy_processes)
 
     # Style
     #top_style = ttk.Style()
@@ -42,7 +42,7 @@ def run(gui_text_queue, start_process, stop_process):
     top_tab_manager.add(setting_tab, text='设置')
 
     # Translate Frame Widgets
-    button_commands = [start_process, stop_process]
+    button_commands = [start_threads, stop_threads]
     button_texts = ['Start', 'Stop']
     start_button = StartButton(translate_tab, button_texts, button_commands)
     text_frame = TextFrame(gui_text_queue, translate_tab, height=10)

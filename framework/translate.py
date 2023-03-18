@@ -75,3 +75,8 @@ class TextFrame(scrolledtext.ScrolledText):
             self.insert('end', utils.hms_time() + ' | ' + text + '\n')
 
         self.config(state=DISABLED)
+
+    def clear(self):
+        self.config(state=NORMAL)
+        self.delete(1.0, END)
+        self.config(state=DISABLED)

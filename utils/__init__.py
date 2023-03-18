@@ -82,3 +82,12 @@ def hms_time() -> str:
     :return:当前hh:mm:ss时间字符串
     """
     return strftime('%H:%M:%S', localtime())
+
+
+def is_file_exist(path: str):
+    try:
+        file = open(path, 'r')
+        file.close()
+        return True
+    except FileNotFoundError:
+        return False

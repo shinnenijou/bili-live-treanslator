@@ -18,7 +18,6 @@ anti_shield = None
 
 def init(send_queue, gui_text_queue):
     global sender, anti_shield
-    send_queue = p_Queue(maxsize=0)
 
     sender = DanmakuSender(
         send_queue=send_queue,
@@ -27,7 +26,7 @@ def init(send_queue, gui_text_queue):
         sessdata=CONFIG['user']['SESSDATA'],
         bili_jct=CONFIG['user']['BILI_JCT'],
         buvid3=CONFIG['user']['BUVID3'],
-        send_interval=CONFIG['room']['SEND_INTERVAL']
+        send_interval=float(CONFIG['room']['SEND_INTERVAL'])
     )
 
     if sender.get_user_info() == '':

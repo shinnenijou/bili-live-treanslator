@@ -12,7 +12,7 @@ CONFIG = RawConfigParser()
 CONFIG.read(CONFIG_ROOT + ConfigFile[EConfigType.Translate])
 
 
-def init(name: str, src_queue: p_Queue, send_queue: p_Queue):
+def init(name: str, translate_queue: p_Queue, send_queue: p_Queue):
     global translator
 
     translator_map = {
@@ -28,8 +28,8 @@ def init(name: str, src_queue: p_Queue, send_queue: p_Queue):
         return False
 
     translator = translator_map[name](
-        _src_queue=src_queue,
-        _send_queue= send_queue,
+        _src_queue=translate_queue,
+        _send_queue=send_queue,
         _name=name,
         _config=CONFIG[name]
     )

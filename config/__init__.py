@@ -1,9 +1,9 @@
-from enum import Enum
-
 CONFIG_ROOT = 'config/'
+MODEL_ROOT = 'res/model/'
+TEMP_ROOT = '.temp/'
 
 
-class EConfigType(Enum):
+class EConfigType:
     Global = 0
     Translate = 1
     Bilibili = 2
@@ -33,7 +33,20 @@ TranslateDefault = {
     }
 }
 
+
 class Const:
     AppTitle = '同传鸡'
     AppSize = '480x270'
     UpdateInterval = 100
+
+
+class EProcessStatus:
+    Init = 0
+    Running = 1
+    Error = 2
+    Stop = 3
+
+
+class EProcessCommand:
+    Start = 0
+    Stop = 1
