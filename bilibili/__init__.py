@@ -1,13 +1,8 @@
-from configparser import RawConfigParser
 from multiprocessing import Queue as p_Queue
 
-from config import CONFIG_ROOT, EConfigType, ConfigFile
+from config import config
 from .danmaku_sender import DanmakuSender
 import utils
-
-# Config
-CONFIG = RawConfigParser()
-CONFIG.read(CONFIG_ROOT + ConfigFile[EConfigType.Bilibili])
 
 # Danmaku Sender
 sender = None
@@ -16,17 +11,17 @@ sender = None
 anti_shield = None
 
 
-def init(send_queue, gui_text_queue):
+def init(send_queue: p_Queue, gui_text_queue: p_Queue):
     global sender, anti_shield
 
     sender = DanmakuSender(
         send_queue=send_queue,
         show_queue=gui_text_queue,
-        room_id=CONFIG['room']['TARGET_ROOM'],
-        sessdata=CONFIG['user']['SESSDATA'],
-        bili_jct=CONFIG['user']['BILI_JCT'],
-        buvid3=CONFIG['user']['BUVID3'],
-        send_interval=float(CONFIG['room']['SEND_INTERVAL'])
+        room_id=config.bilibili['room']['target_room'],
+        sessdata=config.bilibili['user']['sessdata'],
+        bili_jct=config.bilibili['user']['bili_jct'],
+        buvid3=config.bilibili['user']['buvid3'],
+        send_interval=float(config.bilibili['room']['send_interval'])
     )
 
     if sender.get_user_info() == '':
@@ -47,15 +42,14 @@ def destroy():
 
 
 def update_config():
-    global CONFIG, sender
-    CONFIG.read(CONFIG_ROOT + ConfigFile[EConfigType.Bilibili])
+    global sender
 
     if sender is None:
         return
 
     sender.update_config(
-        room_id=CONFIG['room']['TARGET_ROOM'],
-        sessdata=CONFIG['user']['SESSDATA'],
-        bili_jct=CONFIG['user']['BILI_JCT'],
-        buvid3=CONFIG['user']['BUVID3']
+        room_id=config.bilibili['room']['target_room'],
+        sessdata=config.bilibili['user']['sessdata'],
+        bili_jct=config.bilibili['user']['bili_jct'],
+        buvid3=config.bilibili['user']['buvid3'],
     )

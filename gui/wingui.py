@@ -9,7 +9,7 @@ class WinGUI(Tk):
         # global config
         self.title(Const.AppTitle)
         self.geometry(Const.AppSize)
-        self.resizable(width=False, height=False)
+        #self.resizable(width=False, height=False)
 
         # runtime flag
         self.__PROCESS_FLAG = False

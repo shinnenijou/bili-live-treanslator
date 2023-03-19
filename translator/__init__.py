@@ -1,15 +1,10 @@
 from multiprocessing import Queue as p_Queue
-from configparser import RawConfigParser, SectionProxy
 
 import utils
-from config import CONFIG_ROOT, ConfigFile, EConfigType
+from config import config
 from . import baidu
 
 translator = None
-
-
-CONFIG = RawConfigParser()
-CONFIG.read(CONFIG_ROOT + ConfigFile[EConfigType.Translate])
 
 
 def init(name: str, translate_queue: p_Queue, send_queue: p_Queue):
@@ -23,15 +18,11 @@ def init(name: str, translate_queue: p_Queue, send_queue: p_Queue):
         utils.logger.error(f"未知的翻译器: {name}, 请检查全局配置")
         return False
 
-    if not CONFIG.has_section(name):
-        utils.logger.error("缺少翻译器配置, 请检查翻译器设置")
-        return False
-
     translator = translator_map[name](
         _src_queue=translate_queue,
         _send_queue=send_queue,
         _name=name,
-        _config=CONFIG[name]
+        _config=config.translate[name]
     )
 
     if not translator.validate_config():
@@ -47,10 +38,9 @@ def destroy():
 
 
 def update_config():
-    global CONFIG, translator
-    CONFIG.read(CONFIG_ROOT + ConfigFile[EConfigType.Translate])
+    global translator
 
     if translator is None:
         return
 
-    translator.update_config(CONFIG[translator.get_name()])
+    translator.update_config(config.translate[translator.get_name()])

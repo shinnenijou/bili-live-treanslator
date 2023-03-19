@@ -1,19 +1,15 @@
 from multiprocessing import Process, Queue as p_Queue
-from configparser import ConfigParser
 from threading import Thread
 import gc
 import os
 
 import translator
 import bilibili
-import framework
+import gui
 import utils
-import asr
-from config import CONFIG_ROOT, EConfigType, ConfigFile, EProcessStatus, EProcessCommand
-
-# Global Config
-CONFIG = ConfigParser()
-CONFIG.read(CONFIG_ROOT + ConfigFile[EConfigType.Global])
+if os.getenv('GUIONLY') is None:
+    import asr
+from config import config
 
 # Sync Queue
 gui_text_queue = None
@@ -117,7 +113,7 @@ def destroy_processes():
 def start_threads():
     # Init translator thread
     global t_translator
-    if not translator.init(CONFIG['global']['TRANSLATOR'], translate_queue, danmaku_send_queue):
+    if not translator.init(config.global_config['global']['TRANSLATOR'], translate_queue, danmaku_send_queue):
         destroy_threads()
         return False
     utils.logger.info('翻译组件初始化完成...')
@@ -174,8 +170,11 @@ def destroy_threads():
 
 
 if __name__ == '__main__':
-    init_processes()
+    if not init_processes():
+        exit(1)
 
-    framework.init()
+    if not gui.init():
+        destroy_processes()
+        exit(1)
 
-    framework.run(gui_text_queue, start_threads, stop_threads, destroy_processes)
+    gui.run(gui_text_queue, start_threads, stop_threads, destroy_processes)
