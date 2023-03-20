@@ -3,12 +3,13 @@ from requests import exceptions, utils as req_utils
 import json
 from time import time, sleep
 from multiprocessing import Queue as p_Queue
+from threading import Thread
 
 import utils
 from .enums import *
 
 
-class DanmakuSender:
+class DanmakuSender(Thread):
     """弹幕发送机"""
     __instance = None
 
@@ -20,6 +21,7 @@ class DanmakuSender:
     def __init__(self, _room_id: str,  _src_queue: p_Queue, _dst_queue: p_Queue,
                  _sessdata: str, _bili_jct: str, _buvid3: str, _send_interval: float, timeout=(3.05, 5)):
 
+        super().__init__()
         # requests config
         self.__session = requests.session()
         self.__url = "https://api.live.bilibili.com/msg/send"
@@ -191,7 +193,7 @@ class DanmakuSender:
         req_utils.add_dict_to_cookiejar(self.__session.cookies, {"Cookie": cookie})
         self.__send_interval = send_interval
 
-    def start(self):
+    def run(self):
         self.__is_running = True
         while self.__is_running:
             text = self.__src_queue.get(block=True)

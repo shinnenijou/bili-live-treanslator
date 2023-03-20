@@ -4,12 +4,13 @@ import random
 import hashlib
 from multiprocessing import Queue as p_Queue
 from configparser import RawConfigParser, SectionProxy
+from threading import Thread
 
 import utils
 from .enums import EResult
 
 
-class BaiduTranslator:
+class BaiduTranslator(Thread):
     __instance = None
 
     def __new__(cls, *args, **kwargs):
@@ -18,6 +19,8 @@ class BaiduTranslator:
         return cls.__instance
 
     def __init__(self, _src_queue: p_Queue, _dst_queue: p_Queue, _name: str, _config: SectionProxy):
+        super().__init__()
+        
         self.__name = _name
 
         # Sync Queue
@@ -82,7 +85,7 @@ class BaiduTranslator:
         result, _ = self.translate('')
         return result == EResult.EMPTYPARAM
 
-    def start(self):
+    def run(self):
         self.__is_running = True
 
         while self.__is_running:

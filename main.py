@@ -3,7 +3,8 @@ from multiprocessing import Process, Queue as p_Queue
 import signal
 
 import gui
-from config import GlobalConfig, EProcessStatus
+import utils
+from config import GlobalConfig, EProcessStatus, TEMP_ROOT
 if os.getenv('GUIONLY') is None:
     import asr
 
@@ -35,6 +36,8 @@ def run_recognizer(
 
 
 if __name__ == '__main__':
+    utils.mkdir(TEMP_ROOT)
+
     gui_text_queue = p_Queue(maxsize=0)
     speech_queue = p_Queue(maxsize=0)
     translate_queue = p_Queue(maxsize=0)
@@ -70,3 +73,5 @@ if __name__ == '__main__':
     if os.getenv('GUIONLY') is None:
         os.kill(recognizer_p.pid, signal.SIGINT)
         recognizer_p.join()
+
+    utils.remove(TEMP_ROOT)

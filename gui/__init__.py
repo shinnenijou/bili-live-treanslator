@@ -1,15 +1,10 @@
 from tkinter import *
 from tkinter import ttk
-from multiprocessing import Queue as p_Queue
 from threading import Thread
-import signal
-import os
 
 import config
 import translator
 import bilibili
-import utils
-import asr
 
 from .setting import *
 from .translate import *
@@ -46,25 +41,8 @@ class WinGUI(Tk):
         utils.init(self.__gui_text_queue)
 
         # thread
-        translator_name = self.__config.global_config.get('global', 'translator') or 'baidu'
-        self.__translator = translator.TranslatorMap[translator_name](
-            _src_queue=self.__translate_queue,
-            _dst_queue=self.__danmaku_send_queue,
-            _name=translator_name,
-            _config=self.__config.translate[translator_name]
-        )
-        self.__translator_t = Thread(target=self.__translator.start)
-
-        self.__sender = bilibili.DanmakuSender(
-            _room_id=self.__config.bilibili.get('room', 'target_room'),
-            _src_queue=self.__danmaku_send_queue,
-            _dst_queue=self.__gui_text_queue,
-            _sessdata=self.__config.bilibili.get('user', 'sessdata'),
-            _bili_jct=self.__config.bilibili.get('user', 'bili_jct'),
-            _buvid3=self.__config.bilibili.get('user', 'buvid3'),
-            _send_interval=self.__config.bilibili.get('room', 'send_interval')
-        )
-        self.__sender_t = Thread(target=self.__sender.start)
+        self.__translator = None
+        self.__sender = None
 
         # Threads running flag
         self.__is_running = False
@@ -94,16 +72,8 @@ class WinGUI(Tk):
         return self.__translator
 
     @property
-    def translator_t(self):
-        return self.__translator_t
-
-    @property
     def sender(self):
         return self.__sender
-
-    @property
-    def sender_t(self):
-        return self.__sender_t
 
     def on_exit(self):
         if self.__is_running:
@@ -114,6 +84,25 @@ class WinGUI(Tk):
 
     def start_threads(self):
         self.__is_running = True
+
+        # Create threads
+        translator_name = self.__config.global_config.get('global', 'translator') or 'baidu'
+        self.__translator = translator.TranslatorMap[translator_name](
+            _src_queue=self.__translate_queue,
+            _dst_queue=self.__danmaku_send_queue,
+            _name=translator_name,
+            _config=self.__config.translate[translator_name]
+        )
+
+        self.__sender = bilibili.DanmakuSender(
+            _room_id=self.__config.bilibili.get('room', 'target_room'),
+            _src_queue=self.__danmaku_send_queue,
+            _dst_queue=self.__gui_text_queue,
+            _sessdata=self.__config.bilibili.get('user', 'sessdata'),
+            _bili_jct=self.__config.bilibili.get('user', 'bili_jct'),
+            _buvid3=self.__config.bilibili.get('user', 'buvid3'),
+            _send_interval=self.__config.bilibili.get('room', 'send_interval')
+        )
 
         # Init translator thread
         if not self.__sender.init():
@@ -131,23 +120,25 @@ class WinGUI(Tk):
 
         # Start Threads
         utils.logger.info('初始化完成, 翻译机开始运行')
-        self.__sender_t.start()
-        self.__translator_t.start()
+        self.__sender.start()
+        self.__translator.start()
 
         return True
 
     def stop_threads(self):
         self.__translator.stop()
-        self.__translator_t.join()
+        self.__translator.join()
         utils.logger.info('成功停止翻译组件...')
 
         self.__sender.stop()
-        self.__sender_t.join()
+        self.__sender.join()
         utils.logger.info('成功停止发送组件...')
 
         utils.logger.info('翻译机已停止运行')
 
         self.__is_running = False
+        self.__translator = None
+        self.__sender = None
 
         return True
 
