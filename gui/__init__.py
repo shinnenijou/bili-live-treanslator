@@ -3,11 +3,11 @@ from tkinter import ttk
 from multiprocessing import Queue as p_Queue
 
 from .wingui import WinGUI
-from .setting import SettingTab, SettingManager
+from .setting import SettingManager
 from .translate import TranslateFrame, TextFrame
 from .button import TransButton
 
-from config import config
+from config import config, TranslateTitleToOption, BilibiliTitleToOption, GlobalTitleToOption
 
 
 def init():
@@ -29,12 +29,11 @@ def run(gui_text_queue: p_Queue, start_threads: p_Queue, stop_threads: p_Queue, 
 
     # Tabs
     translate_tab = TranslateFrame(top_tab_manager)
-    setting_tab = Frame(top_tab_manager)
-
+    setting_tab_manager = SettingManager(top_tab_manager, style='my.TNotebook')
 
     # Add Tabs
     top_tab_manager.add(translate_tab, text='翻译')
-    top_tab_manager.add(setting_tab, text='设置')
+    top_tab_manager.add(setting_tab_manager, text='设置')
 
     # Translate Frame Direct Widgets
     start_button = TransButton(
@@ -45,44 +44,31 @@ def run(gui_text_queue: p_Queue, start_threads: p_Queue, stop_threads: p_Queue, 
     text_frame = TextFrame(gui_text_queue, translate_tab, height=10)
 
     # Setting Frame Direct Widgets
-    setting_tab_manager = SettingManager(setting_tab, style='my.TNotebook')
-    modify_button = TransButton(
-        setting_tab_manager,
-        ['修改', '保存'],
-        [setting_tab_manager.allow_modify, setting_tab_manager.save_modify]
-    )
+
+
 
     # Global Setting
-    global_setting = setting_tab_manager.add_setting_tab(config.global_config, text='全局', name='global')
-    global_setting.add_option('翻译接口', config.global_config['global']['translator'])
+    setting_tab_manager.add_tab(tab_title='全局', name='global')
+    global_setting = setting_tab_manager.add_section(tab_name='global', section_title='global', name='global')
+    global_setting.add_options(GlobalTitleToOption.get('global', {}), config.global_config['global'])
 
     # Bilibili Setting
-    bilibili_setting = setting_tab_manager.add_setting_tab(config.bilibili, text='弹幕', name='bilibili')
-    bilibili_setting.add_option('直播间', config.bilibili['room']['target_room'])
-    bilibili_setting.add_option('弹幕发送间隔', config.bilibili['room']['send_interval'])
-    bilibili_setting.add_option('SESSDATA', config.bilibili['user']['sessdata'])
-    bilibili_setting.add_option('BILI_JCT', config.bilibili['user']['bili_jct'])
-    bilibili_setting.add_option('BUVID3', config.bilibili['user']['buvid3'])
+    setting_tab_manager.add_tab(tab_title='弹幕', name='bilibili')
+    bilibili_setting = setting_tab_manager.add_section(tab_name='bilibili', section_title='直播间', name='room')
+    bilibili_setting.add_options(BilibiliTitleToOption.get('room', {}), config.bilibili['room'])
+    bilibili_setting = setting_tab_manager.add_section(tab_name='bilibili', section_title='用户', name='user')
+    bilibili_setting.add_options(BilibiliTitleToOption.get('user', {}), config.bilibili['user'])
 
     # Translate Setting
-    translator_name = config.global_config['global']['translator']
-    translate_setting = setting_tab_manager.add_setting_tab(config.translate, text='翻译', name='translate')
-    translate_setting.add_option('API', config.translate[translator_name]['api'])
-    translate_setting.add_option('APPID', config.translate[translator_name]['appid'])
-    translate_setting.add_option('KEY', config.translate[translator_name]['key'])
-    translate_setting.add_option('源语言', config.translate[translator_name]['from'])
-    translate_setting.add_option('目标语言', config.translate[translator_name]['to'])
-    translate_setting.add_option('重试次数', config.translate[translator_name]['retry_limit'])
+    setting_tab_manager.add_tab(tab_title='翻译', name='translate')
+    translate_setting = setting_tab_manager.add_section(tab_name='translate', section_title='baidu', name='baidu')
+    translate_setting.add_options(TranslateTitleToOption.get('baidu', {}), config.translate['baidu'])
 
     # Widgets Position
     top_tab_manager.pack(fill=BOTH, expand=True)
     text_frame.pack(fill=BOTH, expand=True)
     start_button.pack(pady=10, padx=10)
-    setting_tab_manager.pack(fill=BOTH, expand=True)
-    modify_button.pack(side=BOTTOM)
 
-    global_setting.grid_children()
-    bilibili_setting.grid_children()
-    translate_setting.grid_children()
+    setting_tab_manager.pack_tabs()
 
     win.mainloop()

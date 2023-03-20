@@ -16,33 +16,33 @@ ConfigFile = {
 }
 
 
-GlobalDefault = {
+GlobalTitleToOption = {
     'global': {
-        'TRANSLATOR': 'Baidu',
+        '翻译接口': 'translator',
     }
 }
 
 
-TranslateDefault = {
-    'Baidu': {
-        'API': 'https://fanyi-api.baidu.com/api/trans/vip/translate',
-        'APPID': '',
-        'KEY': '',
-        'FROM': 'auto',
-        'TO': 'zh',
-        'RETRY_LIMIT': '2',
+TranslateTitleToOption = {
+    'baidu': {
+        'API': 'api',
+        'APPID': 'appid',
+        'KEY': 'key',
+        '源语言': 'from',
+        '目标语言': 'to',
+        '重试次数': 'retry_limit',
     }
 }
 
-BilibiliDefault = {
+BilibiliTitleToOption = {
     'room': {
-        'TARGET_ROOM': '',
-        'SEND_INTERVAL': '0.5',
+        '直播间号': 'target_room',
+        '发送间隔': 'send_interval',
     },
     'user': {
-        'SESSDATA': '',
-        'BILI_JCT': '',
-        'BUVID3': '',
+        'SESSDATA': 'sessdata',
+        'BILI_JCT': 'bili_jct',
+        'BUVID3': 'buvid3',
     }
 }
 

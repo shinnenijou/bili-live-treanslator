@@ -40,31 +40,31 @@ class Config:
 
     def __calibrate_config(self):
         # global config
-        for section_name, options in GlobalDefault.items():
+        for section_name, options in GlobalTitleToOption.items():
             if not self.__global_config.has_section(section_name):
                 self.__global_config.add_section(section_name)
 
-            for option_name, default_value in options.items():
+            for _, option_name in options.items():
                 if not self.__global_config.has_option(section_name, option_name):
-                    self.__global_config.set(section_name, option_name, default_value)
+                    self.__global_config.set(section_name, option_name, '')
 
         # Bilibili config
-        for section_name, options in BilibiliDefault.items():
+        for section_name, options in BilibiliTitleToOption.items():
             if not self.__bilibili.has_section(section_name):
                 self.__bilibili.add_section(section_name)
 
-            for option_name, default_value in options.items():
+            for _, option_name in options.items():
                 if not self.__bilibili.has_option(section_name, option_name):
-                    self.__bilibili.set(section_name, option_name, default_value)
+                    self.__bilibili.set(section_name, option_name, '')
 
         # Translate config
-        for section_name, options in TranslateDefault.items():
+        for section_name, options in TranslateTitleToOption.items():
             if not self.__translate.has_section(section_name):
                 self.__translate.add_section(section_name)
 
-            for option_name, default_value in options.items():
+            for _, option_name in options.items():
                 if not self.__translate.has_option(section_name, option_name):
-                    self.__translate.set(section_name, option_name, default_value)
+                    self.__translate.set(section_name, option_name, '')
 
         self.save_config()
 
@@ -88,3 +88,6 @@ class Config:
         file = open(CONFIG_ROOT + ConfigFile[EConfigType.Translate], 'w')
         self.__translate.write(file, space_around_delimiters=False)
         file.close()
+
+    def update_config(self):
+        pass
