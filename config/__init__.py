@@ -1,4 +1,2 @@
-from .config import Config
+from .config import *
 from .const import *
-
-config = Config()

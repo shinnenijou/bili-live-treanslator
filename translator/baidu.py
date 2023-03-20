@@ -9,7 +9,7 @@ import utils
 from .enums import EResult
 
 
-class Translator:
+class BaiduTranslator:
     __instance = None
 
     def __new__(cls, *args, **kwargs):
@@ -17,12 +17,12 @@ class Translator:
             cls.__instance = super().__new__(cls)
         return cls.__instance
 
-    def __init__(self, _src_queue: p_Queue, _send_queue: p_Queue, _name: str, _config: SectionProxy):
+    def __init__(self, _src_queue: p_Queue, _dst_queue: p_Queue, _name: str, _config: SectionProxy):
         self.__name = _name
 
         # Sync Queue
         self.__src_queue = _src_queue
-        self.__send_queue = _send_queue
+        self.__dst_queue = _dst_queue
 
         # Request Config
         self.__api = _config['API']
@@ -34,6 +34,13 @@ class Translator:
 
         # Control
         self.__is_running = False
+
+    def init(self):
+        if not self.validate_config():
+            utils.logger.error("[error]翻译器配置错误, 请检查翻译器设置")
+            return False
+
+        return True
 
     def __get(self, _params: dict = None):
         result = EResult.ERROR
@@ -86,13 +93,13 @@ class Translator:
 
             _, dst_text = self.translate(*src_text)
             for text in dst_text:
-                self.__send_queue.put(text)
+                self.__dst_queue.put(text)
 
     def stop(self):
         self.__is_running = False
         self.__src_queue.put('')
 
-    def update_config(self, _config:SectionProxy):
+    def update_config(self, _config: SectionProxy):
         self.__api = _config['API']
         self.__appid = _config['APPID']
         self.__key = _config['KEY']

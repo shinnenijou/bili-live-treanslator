@@ -4,7 +4,7 @@ from utils import touch
 from .const import *
 
 
-class Config:
+class GlobalConfig:
     __instance = None
 
     def __new__(cls, *args, **kwargs):
@@ -19,9 +19,9 @@ class Config:
         touch(CONFIG_ROOT + ConfigFile[EConfigType.Bilibili])
         touch(CONFIG_ROOT + ConfigFile[EConfigType.Translate])
 
-        self.__global_config = RawConfigParser()
-        self.__bilibili = RawConfigParser()
-        self.__translate = RawConfigParser()
+        self.__global_config = Config(CONFIG_ROOT + ConfigFile[EConfigType.Global])
+        self.__bilibili = Config(CONFIG_ROOT + ConfigFile[EConfigType.Bilibili])
+        self.__translate = Config(CONFIG_ROOT + ConfigFile[EConfigType.Translate])
 
         self.read_config()
         self.__calibrate_config()
@@ -40,54 +40,45 @@ class Config:
 
     def __calibrate_config(self):
         # global config
-        for section_name, options in GlobalTitleToOption.items():
-            if not self.__global_config.has_section(section_name):
-                self.__global_config.add_section(section_name)
-
-            for _, option_name in options.items():
-                if not self.__global_config.has_option(section_name, option_name):
-                    self.__global_config.set(section_name, option_name, '')
-
-        # Bilibili config
-        for section_name, options in BilibiliTitleToOption.items():
-            if not self.__bilibili.has_section(section_name):
-                self.__bilibili.add_section(section_name)
-
-            for _, option_name in options.items():
-                if not self.__bilibili.has_option(section_name, option_name):
-                    self.__bilibili.set(section_name, option_name, '')
-
-        # Translate config
-        for section_name, options in TranslateTitleToOption.items():
-            if not self.__translate.has_section(section_name):
-                self.__translate.add_section(section_name)
-
-            for _, option_name in options.items():
-                if not self.__translate.has_option(section_name, option_name):
-                    self.__translate.set(section_name, option_name, '')
+        self.__global_config.validate_config(GlobalTitleToOption)
+        self.__bilibili.validate_config(BilibiliTitleToOption)
+        self.__translate.validate_config(TranslateTitleToOption)
 
         self.save_config()
 
     def read_config(self):
-        self.__global_config.read(CONFIG_ROOT + ConfigFile[EConfigType.Global])
-        self.__bilibili.read(CONFIG_ROOT + ConfigFile[EConfigType.Bilibili])
-        self.__translate.read(CONFIG_ROOT + ConfigFile[EConfigType.Translate])
+        self.__global_config.read_config()
+        self.__bilibili.read_config()
+        self.__translate.read_config()
 
     def save_config(self):
-        # global config
-        file = open(CONFIG_ROOT + ConfigFile[EConfigType.Global], 'w')
-        self.__global_config.write(file, space_around_delimiters=False)
-        file.close()
-
-        # bilibili config
-        file = open(CONFIG_ROOT + ConfigFile[EConfigType.Bilibili], 'w')
-        self.__bilibili.write(file, space_around_delimiters=False)
-        file.close()
-
-        # translate config
-        file = open(CONFIG_ROOT + ConfigFile[EConfigType.Translate], 'w')
-        self.__translate.write(file, space_around_delimiters=False)
-        file.close()
+        self.__global_config.save_config()
+        self.__bilibili.save_config()
+        self.__translate.save_config()
 
     def update_config(self):
         pass
+
+
+class Config(RawConfigParser):
+
+    def __init__(self, config_file:str):
+        super().__init__()
+        self.__config_file = config_file
+
+    def read_config(self):
+        self.read(self.__config_file)
+
+    def save_config(self):
+        file = open(self.__config_file, 'w')
+        self.write(file, space_around_delimiters=False)
+        file.close()
+
+    def validate_config(self, title_to_options: dict):
+        for section_name, options in title_to_options.items():
+            if not self.has_section(section_name):
+                self.add_section(section_name)
+
+            for _, option_name in options.items():
+                if not self.has_option(section_name, option_name):
+                    self.set(section_name, option_name, '')

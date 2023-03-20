@@ -19,6 +19,7 @@ ConfigFile = {
 GlobalTitleToOption = {
     'global': {
         '翻译接口': 'translator',
+        '语音识别模型': 'asr_model',
     }
 }
 
@@ -54,7 +55,7 @@ class Const:
 
 
 class EProcessStatus:
-    Init = 0
+    Ready = 0
     Running = 1
     Error = 2
     Stop = 3

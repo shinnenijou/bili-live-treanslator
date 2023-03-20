@@ -1,8 +1,9 @@
 from tkinter import *
-from tkinter import ttk
-from configparser import SectionProxy
+from tkinter import ttk,messagebox
+from configparser import SectionProxy, RawConfigParser
 
 from .button import TransButton
+from config import Config
 
 
 class SettingManager(ttk.Notebook):
@@ -10,17 +11,17 @@ class SettingManager(ttk.Notebook):
     def __init__(self, master, **kwargs):
         super().__init__(master, **kwargs)
 
-    def add_tab(self, tab_title: str, **kwargs):
-        setting_tab = SettingFrame(self, **kwargs)
+    def add_tab(self, config: RawConfigParser, tab_title: str, **kwargs):
+        setting_tab = SettingFrame(self, config,**kwargs)
         self.add(setting_tab, text=tab_title)
 
-        cancel_button = Button(
+        Button(
             setting_tab,
             text='取消',
             command=self.cancel_modify
         )
 
-        modify_button = TransButton(
+        TransButton(
             setting_tab,
             ['修改', '保存'],
             [self.allow_modify, self.save_modify]
@@ -56,17 +57,10 @@ class SettingManager(ttk.Notebook):
         return True
 
     def save_modify(self):
-        for _, section in self.get_select().children.items():
-            if not isinstance(section, SettingSection):
-                continue
+        if not messagebox.askyesno('保存设置', '是否保存设置?'):
+            return
 
-            for _, entry in section.children.items():
-                if not isinstance(entry, SettingValue):
-                    continue
-
-                entry.config(state=DISABLED)
-
-        return True
+        return self.get_select().update_config()
 
     def cancel_modify(self):
         for _, section in self.get_select().children.items():
@@ -97,9 +91,26 @@ class SettingManager(ttk.Notebook):
 
 class SettingFrame(Frame):
 
-    def __init__(self, master, **kwargs):
+    def __init__(self, master, config: Config, **kwargs):
         super().__init__(master, **kwargs)
         self.row = 0
+        self.__config = config
+
+    def update_config(self):
+        for section_name, section in self.children.items():
+            if not isinstance(section, SettingSection):
+                continue
+
+            for option_name, entry in section.children.items():
+                if not isinstance(entry, SettingValue):
+                    continue
+
+                if entry.update_value():
+                    self.__config.set(section_name, option_name, entry.get())
+                entry.config(state=DISABLED)
+
+        self.__config.save_config()
+        return True
 
 
 class SettingSection(Frame):
@@ -107,9 +118,9 @@ class SettingSection(Frame):
         super().__init__(master, **kwargs)
         self.__label = Label(self, text=section_title)
 
-    def add_option(self, option_title: str = '', value : str = '', **kwargs):
-        label = SettingOption(self, text=option_title, **kwargs)
-        entry = SettingValue(self, value=value, exportselection=0, **kwargs)
+    def add_option(self, title: str, option_name:str, value : str, value_name:str, **kwargs):
+        label = SettingOption(self, text=title, name=option_name)
+        entry = SettingValue(self, value=value, exportselection=0, name=value_name)
         label.value_object = entry
         entry.option_object = label
 
@@ -118,7 +129,7 @@ class SettingSection(Frame):
     def add_options(self, options: dict, config: SectionProxy):
         for title, option_name in options.items():
             value = config.get(option_name, '')
-            self.add_option(title, value)
+            self.add_option(title, '_' + option_name , value, option_name)
 
     def grid_children(self):
         row = self.master.row

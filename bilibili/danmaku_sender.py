@@ -17,8 +17,8 @@ class DanmakuSender:
             cls.__instance = super().__new__(cls)
         return cls.__instance
 
-    def __init__(self, room_id: str,  send_queue: p_Queue, show_queue: p_Queue,
-                 sessdata: str, bili_jct: str, buvid3: str, send_interval: float, timeout=(3.05, 5)):
+    def __init__(self, _room_id: str,  _src_queue: p_Queue, _dst_queue: p_Queue,
+                 _sessdata: str, _bili_jct: str, _buvid3: str, _send_interval: float, timeout=(3.05, 5)):
 
         # requests config
         self.__session = requests.session()
@@ -26,14 +26,14 @@ class DanmakuSender:
         self.__headers = {
             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/102.0.5005.63 Safari/537.36 Edg/102.0.1245.30',
             'Origin': f'https://live.bilibili.com',
-            'Referer': f'https://live.bilibili.com/{room_id}'
+            'Referer': f'https://live.bilibili.com/{_room_id}'
         }
         self.__timeout = timeout
 
         # account config
-        self.__room_id = room_id
-        self.__csrf = bili_jct
-        cookie = f'buvid3={buvid3};SESSDATA={sessdata};bili_jct={bili_jct}'
+        self.__room_id = _room_id
+        self.__csrf = _bili_jct
+        cookie = f'buvid3={_buvid3};SESSDATA={_sessdata};bili_jct={_bili_jct}'
         req_utils.add_dict_to_cookiejar(self.__session.cookies, {"Cookie": cookie})
 
 
@@ -41,12 +41,23 @@ class DanmakuSender:
         self.__mode = EDanmakuPosition.Roll
         self.__color = EDanmakuColor.White
         self.__name = ''
-        self.__send_interval = send_interval
+        self.__send_interval = _send_interval
 
         # Control
         self.__is_running = False
-        self.__send_queue = send_queue
-        self.__show_queue = show_queue
+        self.__src_queue = _src_queue
+        self.__dst_queue = _dst_queue
+
+    def init(self):
+        if self.get_user_info() == '':
+            utils.logger.error("获取用户信息, 请检查配置文件")
+            return False
+
+        if self.get_danmaku_config() == (None, None):
+            utils.logger.error("获取弹幕配置失败, 请检查配置文件")
+            return False
+
+        return True
 
     def __post(self, url: str, data: dict) -> tuple[ESendResult, requests.Response|None]:
         """
@@ -119,7 +130,7 @@ class DanmakuSender:
         """
         result, resp = self.__send(msg)
         if result == ESendResult.Success:
-            self.__show_queue.put(msg)
+            self.__dst_queue.put(msg)
         elif result == ESendResult.DuplicateMsg:
             utils.logger.error("发送失败：重复弹幕")
         else:
@@ -183,12 +194,12 @@ class DanmakuSender:
     def start(self):
         self.__is_running = True
         while self.__is_running:
-            text = self.__send_queue.get(block=True)
+            text = self.__src_queue.get(block=True)
             if text != '':
                 self.send(text)
                 sleep(self.__send_interval)
 
     def stop(self):
         self.__is_running = False
-        self.__send_queue.put('')
+        self.__src_queue.put('')
 
