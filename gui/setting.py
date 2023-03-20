@@ -1,5 +1,5 @@
 from tkinter import *
-from tkinter import ttk,messagebox
+from tkinter import ttk, messagebox
 from configparser import SectionProxy, RawConfigParser
 
 from .button import TransButton

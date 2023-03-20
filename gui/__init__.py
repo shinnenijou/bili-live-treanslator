@@ -1,6 +1,6 @@
 from tkinter import *
 from tkinter import ttk
-from multiprocessing import Process, Queue as p_Queue
+from multiprocessing import Queue as p_Queue
 from threading import Thread
 import signal
 import os
@@ -17,60 +17,57 @@ from .button import *
 
 
 class WinGUI(Tk):
-    def __init__(self, **kwargs):
+    def __init__(self,
+                 _config: config.GlobalConfig,
+                 _gui_text_queue: p_Queue,
+                 _speech_queue: p_Queue,
+                 _translate_queue: p_Queue,
+                 _danmaku_send_queue: p_Queue,
+                 **kwargs):
+
         super().__init__(**kwargs)
 
         # global config
         self.title(config.Const.AppTitle)
         self.geometry(config.Const.AppSize)
         self.resizable(width=False, height=False)
-        self.__config = config.GlobalConfig()
+        self.__config = _config
 
         # override sys callback
         self.protocol("WM_DELETE_WINDOW", self.on_exit)
 
         # Sync Queue
-        self.__gui_text_queue = p_Queue(maxsize=0)
-        self.__speech_queue = p_Queue(maxsize=0)
-        self.__translate_queue = p_Queue(maxsize=0)
-        self.__danmaku_send_queue = p_Queue(maxsize=0)
+        self.__gui_text_queue = _gui_text_queue
+        self.__speech_queue = _speech_queue
+        self.__translate_queue = _translate_queue
+        self.__danmaku_send_queue = _danmaku_send_queue
 
         # logger
         utils.init(self.__gui_text_queue)
 
-        # process
-        self.__recognizer_p = Process(target=self.run_recognizer)  # recognizer object will be created in child process
-
         # thread
-        self.__translator = translator.TranslatorMap[self.__config.global_config.get('global', 'translator', 'baidu')](
+        translator_name = self.__config.global_config.get('global', 'translator') or 'baidu'
+        self.__translator = translator.TranslatorMap[translator_name](
             _src_queue=self.__translate_queue,
             _dst_queue=self.__danmaku_send_queue,
-            _name=self.__config.global_config.get('global', 'translator', 'baidu'),
-            _config = self.__config.translate[self.__config.global_config.get('global', 'translator', 'baidu')]
+            _name=translator_name,
+            _config=self.__config.translate[translator_name]
         )
         self.__translator_t = Thread(target=self.__translator.start)
 
         self.__sender = bilibili.DanmakuSender(
-            _room_id=self.__config.bilibili.get('room', 'target_room', ''),
+            _room_id=self.__config.bilibili.get('room', 'target_room'),
             _src_queue=self.__danmaku_send_queue,
             _dst_queue=self.__gui_text_queue,
-            _sessdata=self.__config.bilibili.get('user', 'sessdata', ''),
-            _bili_jct=self.__config.bilibili.get('user', 'bili_jct', ''),
-            _buvid3=self.__config.bilibili.get('user', 'buvid3', ''),
-            _send_interval=self.__config.bilibili.get('room', 'send_interval', '')
+            _sessdata=self.__config.bilibili.get('user', 'sessdata'),
+            _bili_jct=self.__config.bilibili.get('user', 'bili_jct'),
+            _buvid3=self.__config.bilibili.get('user', 'buvid3'),
+            _send_interval=self.__config.bilibili.get('room', 'send_interval')
         )
         self.__sender_t = Thread(target=self.__sender.start)
 
-        # running flag
+        # Threads running flag
         self.__is_running = False
-
-        # start process
-        self.__recognizer_p.start()
-        if self.__translate_queue.get() != config.EProcessStatus.Ready:
-            self.__recognizer_p.join()
-            raise RuntimeError('ASR process failed to start!')
-
-
 
     @property
     def config(self):
@@ -93,10 +90,6 @@ class WinGUI(Tk):
         return self.__danmaku_send_queue
 
     @property
-    def recognizer_p(self):
-        return self.__recognizer_p
-
-    @property
     def translator(self):
         return self.__translator
 
@@ -113,32 +106,11 @@ class WinGUI(Tk):
         return self.__sender_t
 
     def on_exit(self):
-        os.kill(self.__recognizer_p.pid, signal.SIGINT)
-
         if self.__is_running:
             self.stop_threads()
             self.__is_running = False
 
         self.destroy()
-
-    def run_recognizer(self):
-        recognizer = asr.ASRRecognizer(
-            _model_name=self.__config.global_config.get('global', 'asm_model'),
-            _src_queue=self.__speech_queue,
-            _dst_queue=self.__translate_queue,
-            _gui_text_queue=self.__gui_text_queue
-        )
-
-        signal.signal(signal.SIGINT, recognizer.stop)
-
-        if not recognizer.init():
-            self.__translate_queue.put(config.EProcessStatus.Error)
-            return
-        else:
-            self.__translate_queue.put(config.EProcessStatus.Ready)
-
-        # Block Here!
-        recognizer.start()
 
     def start_threads(self):
         self.__is_running = True
@@ -160,7 +132,7 @@ class WinGUI(Tk):
         # Start Threads
         utils.logger.info('初始化完成, 翻译机开始运行')
         self.__sender_t.start()
-        self.__translator.start()
+        self.__translator_t.start()
 
         return True
 
