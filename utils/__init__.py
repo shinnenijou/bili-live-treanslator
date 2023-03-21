@@ -91,3 +91,8 @@ def is_file_exist(path: str):
         return True
     except FileNotFoundError:
         return False
+
+
+def debug(msg: str):
+    if os.getenv('DEBUG') == '1':
+        print(msg)

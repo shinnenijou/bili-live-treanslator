@@ -1,3 +1,5 @@
+import os
+
 import requests
 from requests import exceptions, utils as req_utils
 from time import time, sleep
@@ -186,8 +188,11 @@ class DanmakuSender(Thread):
         while self.__is_running.is_set():
             text = self.__src_queue.get(block=True).replace('\n', ' ')
             if text != '':
-                #self.send(text)
-                self.__dst_queue.put(text)
+                if os.getenv('DEBUG', '0') == '1':
+                    self.__dst_queue.put(text)
+                else:
+                    self.send(text)
+
                 sleep(self.__send_interval)
 
     def stop(self):

@@ -58,7 +58,7 @@ class ASRRecognizer(object):
             if speech == '' or not utils.is_file_exist(speech):
                 continue
 
-            text = self.__model.transcribe(speech)
+            text = self.__model.transcribe(speech, language='ja')
             for segment in text.get('segments', []):
                 temp = segment.get('text', '')
                 self.__dst_queue.put(temp)

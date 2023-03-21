@@ -53,6 +53,7 @@ class TextFrame(scrolledtext.ScrolledText):
         self.config(state=NORMAL)
         for text in texts:
             self.insert('end', utils.hms_time() + ' | ' + text + '\n')
+            self.see(END)
 
         self.config(state=DISABLED)
 

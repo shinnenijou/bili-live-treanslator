@@ -68,18 +68,22 @@ class Recorder(Thread):
     async def __record(self):
         self.__is_running.set()
         file_index = 1
-        async with aiohttp.ClientSession() as session:
+        async with aiohttp.ClientSession(
+            timeout=aiohttp.ClientTimeout(total=60 * 60 * 24, sock_read=10)
+        ) as session:
             while self.__is_running.is_set() and self.is_streaming():
                 async with session.get(self.__url,  headers={"User-Agent": "Mozilla/5.0", "Referer": "https://www.bilibili.com/"}) as resp:
                     with open(f'{TEMP_ROOT}{file_index}.flv', 'ab') as file:
                         while self.__is_running.is_set():
                             chunk = await resp.content.read(1024)
                             if not chunk:
+                                self.__dst_queue.put(f'{TEMP_ROOT}{file_index}.flv')
                                 file.close()
+                                file_index += 1
                                 break
 
                             file.write(chunk)
-                            if file.tell() > 1024 * 1024 * 5:
+                            if file.tell() > 1024 * 1024 * 10:
                                 self.__dst_queue.put(f'{TEMP_ROOT}{file_index}.flv')
                                 file.close()
                                 file_index += 1
