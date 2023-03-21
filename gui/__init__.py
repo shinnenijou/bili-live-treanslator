@@ -5,6 +5,7 @@ from threading import Thread
 import config
 import translator
 import bilibili
+import stream
 
 from .setting import *
 from .translate import *
@@ -43,6 +44,7 @@ class WinGUI(Tk):
         # thread
         self.__translator = None
         self.__sender = None
+        self.__recorder = None
 
         # Threads running flag
         self.__is_running = False
@@ -104,6 +106,11 @@ class WinGUI(Tk):
             _send_interval=self.__config.bilibili.get('room', 'send_interval')
         )
 
+        self.__recorder = stream.Recorder(
+            _room_id=self.__config.bilibili.get('room', 'target_room'),
+            _dst_queue=self.__speech_queue
+        )
+
         # Init translator thread
         if not self.__sender.init():
             self.stop_threads()
@@ -118,10 +125,18 @@ class WinGUI(Tk):
 
         utils.logger.info(f'发送组件初始化完成, 用户: {self.__sender.get_name()}')
 
+        # Init recorder thread
+        if not self.__recorder.init():
+            self.stop_threads()
+            return False
+
+        utils.logger.info(f'流媒体组件初始化完成')
+
         # Start Threads
         utils.logger.info('初始化完成, 翻译机开始运行')
         self.__sender.start()
         self.__translator.start()
+        self.__recorder.start()
 
         return True
 
@@ -134,11 +149,16 @@ class WinGUI(Tk):
         self.__sender.join()
         utils.logger.info('成功停止发送组件...')
 
+        self.__recorder.stop()
+        self.__recorder.join()
+        utils.logger.info('成功停止流媒体组件...')
+
         utils.logger.info('翻译机已停止运行')
 
         self.__is_running = False
         self.__translator = None
         self.__sender = None
+        self.__recorder = None
 
         return True
 

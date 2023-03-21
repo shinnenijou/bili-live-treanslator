@@ -33,13 +33,8 @@ def run_recognizer(
 
     exit(0)
 
-def run_recorder():
-    pass
-
 
 if __name__ == '__main__':
-    utils.mkdir(TEMP_ROOT)
-
     gui_text_queue = p_Queue(maxsize=0)
     speech_queue = p_Queue(maxsize=0)
     translate_queue = p_Queue(maxsize=0)

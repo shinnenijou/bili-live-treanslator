@@ -9,3 +9,4 @@ pytorch-cuda=11.7
 chardet
 ffmpeg-python
 streamlink
+aiohttp

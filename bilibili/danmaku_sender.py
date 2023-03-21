@@ -1,6 +1,5 @@
 import requests
 from requests import exceptions, utils as req_utils
-import json
 from time import time, sleep
 from multiprocessing import Queue as p_Queue
 from threading import Thread, Event
@@ -35,7 +34,7 @@ class DanmakuSender(Thread):
         self.__mode = EDanmakuPosition.Roll
         self.__color = EDanmakuColor.White
         self.__name = ''
-        self.__send_interval = _send_interval
+        self.__send_interval = float(_send_interval)
 
         # Control
         self.__is_running = Event()
@@ -111,7 +110,7 @@ class DanmakuSender(Thread):
         }
         result, resp = self.__post(self.__url, data)
         if result == ESendResult.Success:
-            resp = json.loads(resp.text)
+            resp = resp.json()
             result = resp['code']
 
         return result, resp
@@ -138,7 +137,7 @@ class DanmakuSender(Thread):
         url = "https://api.live.bilibili.com/xlive/web-room/v1/index/getInfoByUser"
         params = {"room_id": self.__room_id}
         result, resp = self.__get(url=url, params=params)
-        resp = json.loads(resp.text)
+        resp = resp.json()
         if result == ESendResult.Success and resp['code'] == ESendResult.Success:
             danmaku_config = resp["data"]["property"]["danmu"]
             self.__mode = danmaku_config["mode"]
@@ -158,7 +157,7 @@ class DanmakuSender(Thread):
             "csrf": self.__csrf,
         }
         result, resp = self.__post(url=url, data=data)
-        resp = json.loads(resp.text)
+        resp = resp.json()
         if result == ESendResult.Success and resp['code'] == ESendResult.Success:
             self.__mode = mode
             self.__color = color
@@ -169,7 +168,7 @@ class DanmakuSender(Thread):
         """获取用户信息"""
         url = "https://api.bilibili.com/x/space/myinfo"
         result, resp = self.__get(url=url)
-        resp = json.loads(resp.text)
+        resp = resp.json()
         if result == ESendResult.Success and resp['code'] == ESendResult.Success:
             self.__name = resp['data']['name']
 
@@ -185,9 +184,10 @@ class DanmakuSender(Thread):
     def run(self):
         self.__is_running.set()
         while self.__is_running.is_set():
-            text = self.__src_queue.get(block=True)
+            text = self.__src_queue.get(block=True).replace('\n', ' ')
             if text != '':
-                self.send(text)
+                #self.send(text)
+                self.__dst_queue.put(text)
                 sleep(self.__send_interval)
 
     def stop(self):
