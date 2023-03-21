@@ -10,14 +10,6 @@ from .enums import *
 
 
 class DanmakuSender(Thread):
-    """弹幕发送机"""
-    __instance = None
-
-    def __new__(cls, *args, **kwargs):
-        if cls.__instance is None:
-            cls.__instance = super().__new__(cls)
-        return cls.__instance
-
     def __init__(self, _room_id: str,  _src_queue: p_Queue, _dst_queue: p_Queue,
                  _sessdata: str, _bili_jct: str, _buvid3: str, _send_interval: float, timeout=(3.05, 5)):
 

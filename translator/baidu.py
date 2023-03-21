@@ -11,13 +11,6 @@ from .enums import EResult
 
 
 class BaiduTranslator(Thread):
-    __instance = None
-
-    def __new__(cls, *args, **kwargs):
-        if cls.__instance is None:
-            cls.__instance = super().__new__(cls)
-        return cls.__instance
-
     def __init__(self, _src_queue: p_Queue, _dst_queue: p_Queue, _name: str, _config: SectionProxy):
         super().__init__()
         

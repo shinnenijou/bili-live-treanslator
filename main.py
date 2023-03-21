@@ -1,6 +1,5 @@
 import os
 from multiprocessing import Process, Queue as p_Queue
-import signal
 
 import gui
 import utils
@@ -33,6 +32,9 @@ def run_recognizer(
     recognizer.run()
 
     exit(0)
+
+def run_recorder():
+    pass
 
 
 if __name__ == '__main__':
