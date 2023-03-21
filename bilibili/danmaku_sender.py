@@ -3,7 +3,7 @@ from requests import exceptions, utils as req_utils
 import json
 from time import time, sleep
 from multiprocessing import Queue as p_Queue
-from threading import Thread
+from threading import Thread, Event
 
 import utils
 from .enums import *
@@ -46,7 +46,7 @@ class DanmakuSender(Thread):
         self.__send_interval = _send_interval
 
         # Control
-        self.__is_running = False
+        self.__is_running = Event()
         self.__src_queue = _src_queue
         self.__dst_queue = _dst_queue
 
@@ -138,9 +138,6 @@ class DanmakuSender(Thread):
         else:
             utils.logger.error(f"发送失败：未知错误, 错误代码： {result}")
 
-    def is_running(self):
-        return self.__is_running
-
     def get_name(self):
         return self.__name
 
@@ -194,14 +191,14 @@ class DanmakuSender(Thread):
         self.__send_interval = send_interval
 
     def run(self):
-        self.__is_running = True
-        while self.__is_running:
+        self.__is_running.set()
+        while self.__is_running.is_set():
             text = self.__src_queue.get(block=True)
             if text != '':
                 self.send(text)
                 sleep(self.__send_interval)
 
     def stop(self):
-        self.__is_running = False
+        self.__is_running.clear()
         self.__src_queue.put('')
 

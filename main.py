@@ -23,8 +23,6 @@ def run_recognizer(
         _gui_text_queue=_gui_text_queue
     )
 
-    signal.signal(signal.SIGINT, recognizer.stop)
-
     if not recognizer.init():
         _translate_queue.put(EProcessStatus.Error)
         return
@@ -32,7 +30,9 @@ def run_recognizer(
         _translate_queue.put(EProcessStatus.Ready)
 
     # Block Here!
-    recognizer.start()
+    recognizer.run()
+
+    exit(0)
 
 
 if __name__ == '__main__':
@@ -71,7 +71,8 @@ if __name__ == '__main__':
     win.run()
 
     if os.getenv('GUIONLY') is None:
-        os.kill(recognizer_p.pid, signal.SIGINT)
+        recognizer_p.terminate()
         recognizer_p.join()
 
     utils.remove(TEMP_ROOT)
+    exit(0)

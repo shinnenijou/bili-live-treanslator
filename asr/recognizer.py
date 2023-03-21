@@ -23,9 +23,6 @@ class ASRRecognizer(object):
         self.__device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
         self.__model = None
 
-        # Control
-        self.__is_running = False
-
     def init(self):
         if not utils.is_file_exist(MODEL_ROOT + self.__model_name + '.pt'):
             return False
@@ -55,9 +52,8 @@ class ASRRecognizer(object):
         )
         gc.collect()
 
-    def start(self):
-        self.__is_running = True
-        while self.__is_running:
+    def run(self):
+        while True:
             speech = self.__src_queue.get()
             if speech == '' or not utils.is_file_exist(speech):
                 continue
@@ -66,7 +62,3 @@ class ASRRecognizer(object):
             for segment in text.get('segments', []):
                 temp = segment.get('text', '')
                 self.__dst_queue.put(temp)
-
-    def stop(self):
-        self.__is_running = False
-        self.__src_queue.put('')

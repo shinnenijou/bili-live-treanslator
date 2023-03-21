@@ -4,7 +4,7 @@ import random
 import hashlib
 from multiprocessing import Queue as p_Queue
 from configparser import RawConfigParser, SectionProxy
-from threading import Thread
+from threading import Thread, Event
 
 import utils
 from .enums import EResult
@@ -36,7 +36,7 @@ class BaiduTranslator(Thread):
         self.__retry_limit = _config['RETRY_LIMIT']
 
         # Control
-        self.__is_running = False
+        self.__is_running = Event()
 
     def init(self):
         if not self.validate_config():
@@ -86,9 +86,9 @@ class BaiduTranslator(Thread):
         return result == EResult.EMPTYPARAM
 
     def run(self):
-        self.__is_running = True
+        self.__is_running.set()
 
-        while self.__is_running:
+        while self.__is_running.is_set():
             src_text = utils.get_all(self.__src_queue)
 
             while src_text.count('') > 0:
@@ -99,7 +99,7 @@ class BaiduTranslator(Thread):
                 self.__dst_queue.put(text)
 
     def stop(self):
-        self.__is_running = False
+        self.__is_running.clear()
         self.__src_queue.put('')
 
     def update_config(self, _config: SectionProxy):
