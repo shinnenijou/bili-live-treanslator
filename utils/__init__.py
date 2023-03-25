@@ -51,6 +51,15 @@ def remove(path: str):
         print(e)
 
 
+def rm(file: str):
+    try:
+        os.remove(file)
+    except FileNotFoundError:
+        pass
+    except Exception as e:
+        print(e)
+
+
 def touch(file: str):
     try:
         open(file, 'x')

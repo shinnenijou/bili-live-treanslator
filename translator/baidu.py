@@ -90,9 +90,6 @@ class BaiduTranslator(Thread):
                 src_text.remove('')
 
             _, dst_text = self.translate(*src_text)
-            if os.getenv('DEBUG', '0') == '1':
-                for text in src_text:
-                    self.__dst_queue.put(text)
 
             for text in dst_text:
                 self.__dst_queue.put(text)

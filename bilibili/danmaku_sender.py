@@ -191,9 +191,16 @@ class DanmakuSender(Thread):
                 if os.getenv('DEBUG', '0') == '1':
                     self.__dst_queue.put(text)
                 else:
-                    self.send(text)
+                    msgs = []
+                    while len(text) > 18:
+                        msgs.append('【' + text[:19] + '】')
+                        text = text[19:]
 
-                sleep(self.__send_interval)
+                    msgs.append('【' + text + '】')
+
+                    for msg in msgs:
+                        self.send(msg)
+                        sleep(self.__send_interval)
 
     def stop(self):
         self.__is_running.clear()

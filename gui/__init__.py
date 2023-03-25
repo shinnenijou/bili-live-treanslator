@@ -1,6 +1,5 @@
-from tkinter import *
-from tkinter import ttk
-from threading import Thread
+import os
+import signal
 
 import config
 import translator
@@ -19,6 +18,7 @@ class WinGUI(Tk):
                  _speech_queue: p_Queue,
                  _translate_queue: p_Queue,
                  _danmaku_send_queue: p_Queue,
+                 _recognizer_pid: int,
                  **kwargs):
 
         super().__init__(**kwargs)
@@ -40,6 +40,9 @@ class WinGUI(Tk):
 
         # logger
         utils.init(self.__gui_text_queue)
+
+        # process
+        self.__recognizer_pid = _recognizer_pid
 
         # thread
         self.__translator = None
@@ -131,6 +134,8 @@ class WinGUI(Tk):
             return False
 
         utils.logger.info(f'流媒体组件初始化完成')
+
+        self.__speech_queue.put('clear')
 
         # Start Threads
         utils.logger.info('初始化完成, 翻译机开始运行')

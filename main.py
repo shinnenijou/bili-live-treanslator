@@ -1,4 +1,5 @@
 import os
+import signal
 from multiprocessing import Process, Queue as p_Queue
 
 import gui
@@ -63,7 +64,8 @@ if __name__ == '__main__':
         _gui_text_queue=gui_text_queue,
         _speech_queue=speech_queue,
         _translate_queue=translate_queue,
-        _danmaku_send_queue=danmaku_send_queue
+        _danmaku_send_queue=danmaku_send_queue,
+        _recognizer_pid=recognizer_p.pid
     )
     win.run()
 
