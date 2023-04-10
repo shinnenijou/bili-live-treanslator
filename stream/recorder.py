@@ -83,7 +83,7 @@ class Recorder(Thread):
                                 break
 
                             file.write(chunk)
-                            if file.tell() > 1024 * 1024:
+                            if file.tell() > 1024 * 1024 * 5:
                                 self.__dst_queue.put(f'{TEMP_ROOT}{file_index}.flv')
                                 file.close()
                                 file_index += 1

@@ -96,7 +96,7 @@ class ASRRecognizer(object):
                 buffer_size = len(self.__buffer) - (len(self.__buffer) % 4)
                 data = np.frombuffer(self.__buffer[:buffer_size], np.int16).flatten().astype(np.float32) / 32768.0
 
-                segments = self.__model.transcribe(data, language='zh', word_timestamps=True).get('segments', [])
+                segments = self.__model.transcribe(data, language='ja', word_timestamps=False).get('segments', [])
                 for i in range(len(segments) - 1):
                     self.__dst_queue.put(segments[i].get('text', ''))
 
