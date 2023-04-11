@@ -91,17 +91,18 @@ class ASRRecognizer(object):
                 self.__buffer = b''
                 continue
 
-            self.load_audio(file)
-            if len(self.__buffer) >= self.__buffer_threshold:
-                buffer_size = len(self.__buffer) - (len(self.__buffer) % 4)
-                data = np.frombuffer(self.__buffer[:buffer_size], np.int16).flatten().astype(np.float32) / 32768.0
+            # self.load_audio(file)
+            # if len(self.__buffer) < self.__buffer_threshold:
+            #     continue
+            # buffer_size = len(self.__buffer) - (len(self.__buffer) % 4)
+            # data = np.frombuffer(self.__buffer[:buffer_size], np.int16).flatten().astype(np.float32) / 32768.0
 
-                segments = self.__model.transcribe(data, language='ja', word_timestamps=False).get('segments', [])
-                for i in range(len(segments) - 1):
-                    self.__dst_queue.put(segments[i].get('text', ''))
+            segments = self.__model.transcribe(file, language='ja', word_timestamps=False).get('segments', [])
+            for i in range(len(segments)):
+                self.__dst_queue.put(segments[i].get('text', ''))
 
-                seek = buffer_size
-                #if len(segments) > 0 and segments[-1].get('text', '') != '':
-                #    seek = math.ceil(segments[-1].get('start') * SAMPLE_RATE * 2)
+            # seek = buffer_size
+            # if len(segments) > 0 and segments[-1].get('text', '') != '':
+            # seek = math.ceil(segments[-1].get('start') * SAMPLE_RATE * 2)
 
-                self.__buffer = self.__buffer[seek:]
+            # self.__buffer = self.__buffer[seek:]
