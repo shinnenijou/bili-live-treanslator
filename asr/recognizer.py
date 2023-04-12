@@ -99,7 +99,9 @@ class ASRRecognizer(object):
 
             segments = self.__model.transcribe(file, language='ja', word_timestamps=False).get('segments', [])
             for i in range(len(segments)):
-                self.__dst_queue.put(segments[i].get('text', ''))
+                text = segments[i].get('text', '')
+                text = utils.anti_recognize.preprocess(text)
+                self.__dst_queue.put(text)
 
             # seek = buffer_size
             # if len(segments) > 0 and segments[-1].get('text', '') != '':

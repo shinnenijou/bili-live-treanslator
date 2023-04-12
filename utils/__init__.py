@@ -105,3 +105,19 @@ def is_file_exist(path: str):
 def debug(msg: str):
     if os.getenv('DEBUG') == '1':
         print(msg)
+
+class AntiRecognizer:
+    def __init__(self):
+        try:
+            with open('config/anti_recognize.txt', 'r', encoding='utf-8') as f:
+                anti_recognize = f.read().splitlines()
+        except FileNotFoundError:
+            anti_recognize = []
+
+        self.__anti_recognize = anti_recognize
+
+    def preprocess(self, text):
+        for word in self.__anti_recognize:
+            text = text.replace(word, '')
+
+anti_recognize = AntiRecognizer()
