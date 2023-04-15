@@ -85,6 +85,15 @@ def get_all(queue: p_Queue) -> list[str]:
     return ret
 
 
+def clear(queue: p_Queue):
+    """
+    清空同步队列里的所有元素
+    :param queue:待清空的队列
+    """
+    while not queue.empty():
+        queue.get_nowait()
+
+
 def hms_time() -> str:
     """
     获取当前hh:mm:ss时间
@@ -93,13 +102,12 @@ def hms_time() -> str:
     return strftime('%H:%M:%S', localtime())
 
 
-def is_file_exist(path: str):
-    try:
-        file = open(path, 'r')
-        file.close()
-        return True
-    except FileNotFoundError:
-        return False
+def isfile(path: str):
+    return os.path.isfile(path)
+
+
+def isdir(path: str):
+    return os.path.isdir(path)
 
 
 def debug(msg: str):
