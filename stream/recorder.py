@@ -67,7 +67,7 @@ class Recorder(Thread):
 
     async def __record(self):
         self.__is_running.set()
-        file_index = 1
+        file_index = 101
         async with aiohttp.ClientSession(
             timeout=aiohttp.ClientTimeout(total=60 * 60 * 24, sock_read=10)
         ) as session:
@@ -83,7 +83,7 @@ class Recorder(Thread):
                                 break
 
                             file.write(chunk)
-                            if file.tell() > 1024 * 1024 * 5:
+                            if file.tell() > 1024 * 1024 * 10:
                                 self.__dst_queue.put(f'{TEMP_ROOT}{file_index}.flv')
                                 file.close()
                                 file_index += 1

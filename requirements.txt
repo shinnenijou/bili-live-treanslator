@@ -1,13 +1,4 @@
-aiohttp=3.7.4
-requests=2.28.1
-loguru=0.5.3
-openai-whisper
-pytorch
-torchvision
-torchaudio
-pytorch-cuda=11.7
-chardet
-ffmpeg-python
-streamlink
+requests~=2.28.1
+conda install pytorch torchvision torchaudio pytorch-cuda=11.7 -c pytorch -c nvidia
+faster-whisper
 aiohttp
-cudatoolkit

@@ -3,6 +3,7 @@ import shutil
 from multiprocessing import Queue as p_Queue
 from time import strftime, localtime
 
+import ffmpeg
 
 logger = None
 
@@ -102,6 +103,16 @@ def hms_time() -> str:
     return strftime('%H:%M:%S', localtime())
 
 
+def transcode_to_audio(file_path):
+    new_file = file_path.rsplit('.', 1)[0] + '.mp3'
+    try:
+        ffmpeg.input(file_path).output(new_file).run(cmd=["ffmpeg", "-nostdin"], capture_stdout=True, capture_stderr=True)
+    except ffmpeg.Error as e:
+        print(f"Failed to load audio: {e.stderr.decode()}")
+
+    return new_file
+
+
 def isfile(path: str):
     return os.path.isfile(path)
 
@@ -124,8 +135,10 @@ class AntiRecognizer:
 
         self.__anti_recognize = anti_recognize
 
-    def preprocess(self, text):
+    def preprocess(self, text: str):
         for word in self.__anti_recognize:
             text = text.replace(word, '')
+
+        return text
 
 anti_recognize = AntiRecognizer()

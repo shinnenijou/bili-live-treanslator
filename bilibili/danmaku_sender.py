@@ -23,6 +23,7 @@ class DanmakuSender(Thread):
             'Origin': f'https://live.bilibili.com',
             'Referer': f'https://live.bilibili.com/{_room_id}'
         }
+
         self.__timeout = timeout
 
         # account config
@@ -30,7 +31,6 @@ class DanmakuSender(Thread):
         self.__csrf = _bili_jct
         cookie = f'buvid3={_buvid3};SESSDATA={_sessdata};bili_jct={_bili_jct}'
         req_utils.add_dict_to_cookiejar(self.__session.cookies, {"Cookie": cookie})
-
 
         # danmaku config
         self.__mode = EDanmakuPosition.Roll
@@ -45,16 +45,18 @@ class DanmakuSender(Thread):
 
     def init(self):
         if self.get_user_info() == '':
-            utils.logger.error("获取用户信息, 请检查配置文件")
+            utils.logger.error("获取用户信息失败, 请检查配置文件或网络状态")
             return False
 
         if self.get_danmaku_config() == (None, None):
             utils.logger.error("获取弹幕配置失败, 请检查配置文件")
             return False
 
+        utils.clear(self.__src_queue)
+
         return True
 
-    def __post(self, url: str, data: dict) -> tuple[ESendResult, requests.Response|None]:
+    def __post(self, url: str, data: dict):
         """
         POST包装方法, 用于捕获异常
         :param url: 请求地址
@@ -65,6 +67,7 @@ class DanmakuSender(Thread):
         resp = None
         try:
             resp = self.__session.post(url=url, headers=self.__headers, data=data, timeout=self.__timeout)
+
             if resp.status_code == EHTTPStatusCode.OK:
                 result = ESendResult.Success
             else:
@@ -76,7 +79,7 @@ class DanmakuSender(Thread):
 
         return result, resp
 
-    def __get(self, url: str, params: dict = None) -> tuple[ESendResult, requests.Response|None]:
+    def __get(self, url: str, params: dict = None):
         """
         GET包装方法, 用于捕获异常
         :param url: 请求地址
@@ -87,6 +90,7 @@ class DanmakuSender(Thread):
         resp = None
         try:
             resp = self.__session.get(url=url, headers=self.__headers, params=params, timeout=self.__timeout)
+
             if resp.status_code == EHTTPStatusCode.OK:
                 result = ESendResult.Success
             else:
@@ -170,6 +174,9 @@ class DanmakuSender(Thread):
         """获取用户信息"""
         url = "https://api.bilibili.com/x/space/myinfo"
         result, resp = self.__get(url=url)
+        if result == ESendResult.Error:
+            return ''
+
         resp = resp.json()
         if result == ESendResult.Success and resp['code'] == ESendResult.Success:
             self.__name = resp['data']['name']

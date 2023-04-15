@@ -153,3 +153,4 @@ cython_debug/
 *.ini
 *.pt
 .DS_Store
+res/

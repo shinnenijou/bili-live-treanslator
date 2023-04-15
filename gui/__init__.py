@@ -1,6 +1,3 @@
-import os
-import signal
-
 import config
 import translator
 import bilibili
@@ -89,6 +86,9 @@ class WinGUI(Tk):
 
     def start_threads(self):
         self.__is_running = True
+        self.__translator = None
+        self.__sender = None
+        self.__recorder = None
 
         # Create threads
         translator_name = self.__config.global_config.get('global', 'translator') or 'baidu'
@@ -96,8 +96,14 @@ class WinGUI(Tk):
             _src_queue=self.__translate_queue,
             _dst_queue=self.__danmaku_send_queue,
             _name=translator_name,
-            _config=self.__config.translate[translator_name]
+            _config=self.__config.translate[translator_name],
         )
+
+        if not self.__translator.init():
+            self.__translator = None
+            return False
+
+        utils.logger.info('翻译组件初始化完成...')
 
         self.__sender = bilibili.DanmakuSender(
             _room_id=self.__config.bilibili.get('room', 'target_room'),
@@ -109,28 +115,23 @@ class WinGUI(Tk):
             _send_interval=self.__config.bilibili.get('room', 'send_interval')
         )
 
-        self.__recorder = stream.Recorder(
-            _room_id=self.__config.bilibili.get('room', 'target_room'),
-            _dst_queue=self.__speech_queue
-        )
-
-        # Init translator thread
-        if not self.__sender.init():
-            self.stop_threads()
-            return False
-
-        utils.logger.info('翻译组件初始化完成...')
-
         # Init danmaku sender thread
         if not self.__sender.init():
-            self.stop_threads()
+            self.__translator = None
+            self.__sender = None
             return False
 
         utils.logger.info(f'发送组件初始化完成, 用户: {self.__sender.get_name()}')
 
-        # Init recorder thread
+        self.__recorder = stream.Recorder(
+            _room_id=self.__config.bilibili.get('room', 'target_room'),
+            _dst_queue=self.__speech_queue,
+        )
+
         if not self.__recorder.init():
-            self.stop_threads()
+            self.__translator = None
+            self.__sender = None
+            self.__recorder = None
             return False
 
         utils.logger.info(f'流媒体组件初始化完成')
@@ -146,17 +147,20 @@ class WinGUI(Tk):
         return True
 
     def stop_threads(self):
-        self.__translator.stop()
-        self.__translator.join()
-        utils.logger.info('成功停止翻译组件...')
+        if self.__translator is not None:
+            self.__translator.stop()
+            self.__translator.join()
+            utils.logger.info('成功停止翻译组件...')
 
-        self.__sender.stop()
-        self.__sender.join()
-        utils.logger.info('成功停止发送组件...')
+        if self.__sender:
+            self.__sender.stop()
+            self.__sender.join()
+            utils.logger.info('成功停止发送组件...')
 
-        self.__recorder.stop()
-        self.__recorder.join()
-        utils.logger.info('成功停止流媒体组件...')
+        if self.__recorder:
+            self.__recorder.stop()
+            self.__recorder.join()
+            utils.logger.info('成功停止流媒体组件...')
 
         utils.logger.info('翻译机已停止运行')
 
