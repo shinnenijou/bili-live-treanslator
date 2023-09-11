@@ -74,7 +74,7 @@ class BaiduTranslator(Thread):
         if result != EResult.SUCCESS:
             return result, []
 
-        return int(data.get('error_code', 0)), [item.get('dst', '') for item in data.get('trans_result', [])]
+        return int(data.get('error_code', EResult.SUCCESS)), [item.get('dst', '') for item in data.get('trans_result', [])]
 
     def validate_config(self):
         result, _ = self.translate('')

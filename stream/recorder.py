@@ -4,18 +4,22 @@ import aiohttp
 from threading import Thread, Event
 import asyncio
 from multiprocessing import Queue as p_Queue
+from time import time
 
 import utils
 from config import TEMP_ROOT
 
+RECORD_TIMEOUT = 5 # min
+
 
 class Recorder(Thread):
-    def __init__(self, _room_id: str, _dst_queue: p_Queue):
+    def __init__(self, _room_id: str, _dst_queue: p_Queue, cookies: dict):
         super().__init__()
         self.__room_id = _room_id
         self.__url = ""
         self.__is_running = Event()
         self.__dst_queue = _dst_queue
+        self.__cookies = cookies
 
     def is_streaming(self):
         api = f"https://api.live.bilibili.com/room/v1/Room/get_info?room_id={self.__room_id}&from=room"
@@ -67,27 +71,33 @@ class Recorder(Thread):
 
     async def __record(self):
         self.__is_running.set()
-        file_index = 101
-        async with aiohttp.ClientSession(
-            timeout=aiohttp.ClientTimeout(total=60 * 60 * 24, sock_read=10)
-        ) as session:
-            while self.__is_running.is_set() and self.is_streaming():
-                async with session.get(self.__url,  headers={"User-Agent": "Mozilla/5.0", "Referer": "https://www.bilibili.com/"}) as resp:
-                    with open(f'{TEMP_ROOT}{file_index}.flv', 'ab') as file:
-                        while self.__is_running.is_set():
-                            chunk = await resp.content.read(1024)
-                            if not chunk:
-                                self.__dst_queue.put(f'{TEMP_ROOT}{file_index}.flv')
-                                file.close()
-                                file_index += 1
-                                break
+        file_index = 1
+        timer = int(time())
+        session = aiohttp.ClientSession(timeout=aiohttp.ClientTimeout(total=60 * (RECORD_TIMEOUT + 1), sock_read=10))
+        while self.__is_running.is_set() and self.is_streaming():
+            if int(time()) - timer > 60 * RECORD_TIMEOUT:
+                await session.close()
+                session = aiohttp.ClientSession(timeout=aiohttp.ClientTimeout(total=60 * (RECORD_TIMEOUT + 1), sock_read=10))
+                timer = int(time())
 
-                            file.write(chunk)
-                            if file.tell() > 1024 * 1024 * 10:
-                                self.__dst_queue.put(f'{TEMP_ROOT}{file_index}.flv')
-                                file.close()
-                                file_index += 1
-                                break
+            async with session.get(self.__url,  headers={"User-Agent": "Mozilla/5.0", "Referer": f"https://live.bilibili.com/{self.__room_id}"}, cookies=self.__cookies) as resp:
+                with open(f'{TEMP_ROOT}{file_index}.flv', 'ab') as file:
+                    while self.__is_running.is_set():
+                        chunk = await resp.content.read(1024)
+                        if not chunk:
+                            self.__dst_queue.put(f'{TEMP_ROOT}{file_index}.flv')
+                            file_index += 1
+                            file_index = file_index % 20
+                            break
+
+                        file.write(chunk)
+                        if file.tell() > 1024 * 1024 * 3:
+                            self.__dst_queue.put(f'{TEMP_ROOT}{file_index}.flv')
+                            file_index += 1
+                            file_index = file_index % 20
+                            break
+
+        await session.close()
 
     def run(self):
         utils.remove(TEMP_ROOT)

@@ -8,6 +8,8 @@ from threading import Thread, Event
 
 import utils
 from .enums import *
+from .BiliLiveAntiShield import BiliLiveAntiShield
+from .BiliLiveShieldWords import words, rules
 
 
 class DanmakuSender(Thread):
@@ -42,6 +44,9 @@ class DanmakuSender(Thread):
         self.__is_running = Event()
         self.__src_queue = _src_queue
         self.__dst_queue = _dst_queue
+
+        # anti shield
+        self.__anti_shield = BiliLiveAntiShield(rules, words)
 
     def init(self):
         if self.get_user_info() == '':
@@ -127,14 +132,22 @@ class DanmakuSender(Thread):
         :param msg: 待发送的弹幕内容
         :return: 服务器返回的响应体
         """
-        result, resp = self.__send(msg)
+        result = ESendResult.Success
+        try_time = 2
+        while try_time > 0:
+            result, resp = self.__send(msg)
+            if result == ESendResult.Success:
+                try_time = 0
+            else:
+                try_time = try_time - 1
+                sleep(1)
+
         if result == ESendResult.Success:
             self.__dst_queue.put(msg)
         elif result == ESendResult.DuplicateMsg:
             utils.logger.error("发送失败：重复弹幕")
         else:
             utils.logger.error(f"发送失败：未知错误, 错误代码： {result}")
-
     def get_name(self):
         return self.__name
 
@@ -194,7 +207,7 @@ class DanmakuSender(Thread):
         self.__is_running.set()
         while self.__is_running.is_set():
             text = self.__src_queue.get(block=True).replace('\n', ' ')
-            if text != '':
+            if len(text) > 2 and text != "谢谢收看" and text != "气团":
                 if os.getenv('DEBUG', '0') == '1':
                     self.__dst_queue.put(text)
                 else:
@@ -206,7 +219,7 @@ class DanmakuSender(Thread):
                     msgs.append('【' + text + '】')
 
                     for msg in msgs:
-                        self.send(msg)
+                        self.send(self.__anti_shield.deal(msg))
                         sleep(self.__send_interval)
 
     def stop(self):

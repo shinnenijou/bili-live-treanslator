@@ -126,6 +126,11 @@ class WinGUI(Tk):
         self.__recorder = stream.Recorder(
             _room_id=self.__config.bilibili.get('room', 'target_room'),
             _dst_queue=self.__speech_queue,
+            cookies={
+                "sessdata": self.__config.bilibili.get('user', 'sessdata'),
+                "bili_jct": self.__config.bilibili.get('user', 'bili_jct'),
+                "buvid3": self.__config.bilibili.get('user', 'buvid3'),
+            }
         )
 
         if not self.__recorder.init():
